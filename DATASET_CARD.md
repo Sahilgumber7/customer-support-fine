@@ -61,6 +61,16 @@ non-empty for `respond`; message sets are unique; and no family crosses the spli
 
 Result: `{"ok": true, "errors": [], "rows": {"train": 3156, "dev": 312}}`.
 
+`data_gen/spotcheck.py` samples 50 rows by stride (35 train, 15 dev) and audits properties the schema
+cannot see: an order id in the message must be extracted; deny-only families must carry no mutating
+tool and must not claim success; read-only families must not mutate; replies must name the order they
+answer about; no placeholder text or non-`example.test` email addresses. Result: **0 findings**
+(`EVALUATION_RESULTS/dataset-spotcheck.json`).
+
+The spot-check caught two real defects on its first run, both fixed at the source and the dataset
+regenerated: an order-status reply that said "delivered and hasn't shipped yet", and a clarification
+question that suggested the fixture id `ORD-1001`.
+
 ## Intended use
 
 Supervised fine-tuning of `Qwen2.5-3B-Instruct` to emit the three stage schemas in this repository. It is

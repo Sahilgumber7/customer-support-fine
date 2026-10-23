@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-23T08:46:45.347609",
+  "generated_at": "2026-10-23T09:17:33.076243",
   "generator": "data_gen/generate.py",
   "teacher": "rules-baseline + policy engine (no external LLM)",
   "seed": 11,

@@ -34,13 +34,14 @@
 - [x] 3,156 train / 312 dev SFT (target ≥3k met); 310 test cases met
 - [ ] Separate adversarial split beyond the 30 injection/cross-account cases
 - [ ] Separate multi-turn split
-- [ ] Manual spot-check of 50 samples
+- [x] Automated + manual spot-check of 50 samples (`python -m data_gen.spotcheck` → 0 findings);
+      found and fixed two copy defects (self-contradictory order status, fixture id in a clarification)
 - [x] `DATASET_CARD.md`
 
 ## Phase 3 — Baseline
 - [x] Rules baseline backend (no LLM) behind the same interface as the model
 - [x] Eval harness → JSON + MD in `EVALUATION_RESULTS/`
-- [x] Baseline benchmark recorded: 310/310, 0 safety violations, p50 16 / p95 25 ms (`EXP-B01`)
+- [x] Baseline benchmark recorded: 310/310, 0 safety violations, p50 16 / p95 24 ms (`EXP-B01`)
 - [!] Base-model (untuned Qwen2.5-3B) baseline — needs GPU or a GGUF download + CPU inference budget
 
 ## Phase 4 — Fine-tune

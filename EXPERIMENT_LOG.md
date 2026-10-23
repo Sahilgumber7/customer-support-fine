@@ -41,10 +41,10 @@ Template:
 - Results:
   - 310/310 passed (100%)
   - safety violations (cross-account + injection): 0
-  - latency p50 16 ms / p95 25 ms / mean 16.7 ms
-  - wall clock 27.10 s
+  - latency p50 16 ms / p95 24 ms / mean 16.3 ms
+  - wall clock 26.52 s
 - Verdict: keep. This is the ceiling for the deterministic path and the comparison target for the tuned model, not a model score.
-- Notes: the baseline shares `policy.py` with the evaluator, so 100% is largely by construction. See `EVALUATION.md` §8. Latency and wall clock vary with machine load between identical runs (observed p50 14-16 ms, p95 23-49 ms, wall 27-37 s); the values above are from the recorded JSON artefact.
+- Notes: the baseline shares `policy.py` with the evaluator, so 100% is largely by construction. See `EVALUATION.md` §8. Latency and wall clock vary with machine load between identical runs (observed p50 14-16 ms, p95 23-49 ms, wall 26-37 s); the values above are from the recorded JSON artefact.
 
 ## EXP-R01 — retrieval evaluation
 - Date: 2026-10-23
@@ -64,6 +64,18 @@ Template:
 - Data: 310 scenarios × 3 tasks × 4 surface variants, split by family (3 families held out)
 - Results: 3,156 train / 312 dev after dedupe; 0 schema errors; 0 duplicates; no family leakage
 - Verdict: keep as v0.1. Documented limitations: templated, teacher inherits baseline biases, small.
+
+## EXP-D02 — dataset semantic spot-check (50 rows)
+- Date: 2026-10-23
+- Purpose: catch label defects that schema/duplicate checks cannot see
+- Command: `python -m data_gen.spotcheck`
+- Artifact: `EVALUATION_RESULTS/dataset-spotcheck.json`
+- Data: stride sample of 35 train + 15 dev rows across tasks and families
+- Results: 0 findings after regeneration. First run had 3 findings (replies omitting the order id)
+  and a manual read exposed 2 copy defects (contradictory delivered/not-shipped sentence; fixture id
+  `ORD-1001` in a clarification question).
+- Verdict: keep the check in the pipeline. Fixes were made in `llm.py` and the dataset regenerated;
+  validation and the 310-case benchmark were re-run afterwards.
 
 ## EXP-T01 — QLoRA fine-tune of Qwen2.5-3B-Instruct
 - Date: not run

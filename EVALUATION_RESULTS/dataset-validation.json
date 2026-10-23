@@ -3,7 +3,7 @@
     "train": {
       "path": "C:\\Users\\muska\\support-llm-3b\\data\\sft\\train.jsonl",
       "rows": 3156,
-      "sha256": "105ff210eb8148d9a0c2d527c9770295ebc2811f824d4eb113702139d6b22a2d",
+      "sha256": "10d0fa1f2f38d0f783abb5a9b2aea18b52a7af09ff8ef7dd5abd2cd91f2f75ca",
       "tasks": {
         "understand": 1052,
         "act": 1052,
@@ -36,7 +36,7 @@
     "dev": {
       "path": "C:\\Users\\muska\\support-llm-3b\\data\\sft\\dev.jsonl",
       "rows": 312,
-      "sha256": "2823b7061d59fc26978f1b7e19221b53fc4effcf2f4655818003eebb3726c06c",
+      "sha256": "ed4e9120e5221c8ec391de2461e05ef4bffe4c6d0090df888ccb458f0ff67720",
       "tasks": {
         "understand": 104,
         "act": 104,

@@ -124,8 +124,8 @@ class RulesBackend:
                 entities=entities,
                 needs_clarification=True,
                 clarification_question=(
-                    "Could you share the order number (it looks like ORD-1001) so I can look "
-                    "into this for you?"
+                    "Could you share the order number (it usually looks like ORD-1234) so I can "
+                    "look into this for you?"
                 ),
                 confidence=0.9,
             )
@@ -426,20 +426,27 @@ class RulesBackend:
             if not ok:
                 code = action.get("error", "TOOL_FAILURE")
                 detail = (action.get("data") or {}).get("message", "")
-                friendly = detail or _deny_copy(code, order, eligibility)
+                if code == "ALREADY_REFUNDED":
+                    friendly = _deny_copy(code, order, eligibility)
+                else:
+                    friendly = detail or _deny_copy(code, order, eligibility)
                 return FinalResponse(customer_message=friendly, cites=["POL-RET"])
 
         # 2) no action: answer from verified facts
         if u.intent == "order_status" and order:
             ship = facts.get("get_shipment_status") or {}
-            if ship.get("status") == "delivered":
+            ship_status = ship.get("status") or order.get("status")
+            if ship_status == "delivered" or order.get("status") == "delivered":
                 body = f"{order.get('order_id')} was delivered. Items: {_items_copy(order)}."
-            elif ship.get("status") == "in_transit":
-                body = (
-                    f"{order.get('order_id')} is in transit with {ship.get('carrier')} "
-                    f"(tracking {ship.get('tracking')}), estimated "
-                    f"{str(ship.get('eta'))[:10]}."
-                )
+            elif ship_status in {"in_transit", "shipped"}:
+                if ship.get("carrier"):
+                    body = (
+                        f"{order.get('order_id')} is in transit with {ship.get('carrier')} "
+                        f"(tracking {ship.get('tracking')}), estimated "
+                        f"{str(ship.get('eta'))[:10]}."
+                    )
+                else:
+                    body = f"{order.get('order_id')} has shipped and is on its way."
             else:
                 body = f"{order.get('order_id')} is {order.get('status')} and hasn't shipped yet."
             return FinalResponse(customer_message=body, cites=["POL-SHIP"])
@@ -553,6 +560,8 @@ def _items_copy(order: dict) -> str:
 
 def _deny_copy(code: str, order: dict, eligibility: dict) -> str:
     reason = eligibility.get("reason_code") or code
+    if reason in {"ALLOW", "OK"}:
+        reason = code
     mapping = {
         "OUT_OF_WINDOW": (
             "That order is outside the return window. Standard returns close 30 days after "
@@ -563,7 +572,10 @@ def _deny_copy(code: str, order: dict, eligibility: dict) -> str:
             "damaged or faulty, tell me and I can handle it under the defective policy."
         ),
         "NOT_RETURNABLE": "That item isn't returnable under our policy.",
-        "ALREADY_REFUNDED": "This order has already been fully refunded, so there's nothing left to refund.",
+        "ALREADY_REFUNDED": (
+            f"{order.get('order_id') or 'That order'} has already been fully refunded, "
+            "so there's nothing left to refund."
+        ),
         "ALREADY_SHIPPED": (
             "The order has already shipped, so it can't be cancelled — but I can start a "
             "return instead."

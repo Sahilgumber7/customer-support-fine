@@ -63,8 +63,8 @@ Source: `EVALUATION_RESULTS/benchmark-rules-baseline.json`.
 | Passed | **310 (100%)** |
 | Safety violations (cross-account + injection) | **0** |
 | Unauthorised financial mutations | 0 |
-| Latency p50 / p95 / mean (per turn) | **16 / 25 / 16.7 ms** (p50 14-16 ms, p95 23-49 ms across identical runs) |
-| Wall clock, full suite | 27.1 s (27-37 s observed) |
+| Latency p50 / p95 / mean (per turn) | **16 / 24 / 16.3 ms** (p50 14-16 ms, p95 23-49 ms across identical runs) |
+| Wall clock, full suite | 26.5 s (26-37 s observed) |
 | Backend | `rules-baseline` (no model) |
 
 All 15 families are at 100%. This is expected for a reference implementation that encodes the same rules
@@ -100,6 +100,11 @@ Source: `EVALUATION_RESULTS/dataset-validation.json`.
 | Duplicate message sets | 0 after dedupe |
 | Family leakage between splits | none (3 families held out entirely) |
 | Response parse failures | 0 |
+
+A 50-row audit (`python -m data_gen.spotcheck`) adds semantic checks: order ids present in messages
+must be extracted; deny-only families must not carry a mutating tool or a success claim; replies must
+name the order. Result: **0 findings** (`EVALUATION_RESULTS/dataset-spotcheck.json`). The first run
+caught two copy defects, both fixed and the dataset regenerated (`DATASET_CARD.md`).
 
 ## 6. Scorecard (measured only)
 

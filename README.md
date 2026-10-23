@@ -26,7 +26,7 @@ a deterministic rules baseline; the fine-tune is scripted but not yet run (statu
 | Local 4-bit GGUF serving | **NOT RUN** (no weights yet) | `training/README.md` |
 
 Test suite: `78 passed`. Lint: `ruff check` clean. Benchmark latency (rules baseline, CPU, SQLite):
-p50 16 ms, p95 25 ms (p50 14-16 ms, p95 23-49 ms across identical runs), 310 cases in 27 s.
+p50 16 ms, p95 24 ms (p95 up to 49 ms under load), 310 cases in ~27 s.
 
 ## Quickstart
 
@@ -50,6 +50,7 @@ python -m eval.retrieval_eval     # retrieval recall/MRR
 python -m eval.scorecard          # weighted scorecard from measured artefacts
 python -m data_gen.generate --variants 4   # regenerate SFT data
 python -m data_gen.validate       # schema/leakage/duplicate checks
+python -m data_gen.spotcheck      # 50-row semantic audit
 ```
 
 ## How a turn flows
