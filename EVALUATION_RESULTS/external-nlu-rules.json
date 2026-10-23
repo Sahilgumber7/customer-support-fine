@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-23T10:48:53+00:00",
+  "backend": {
+    "id": "rules-baseline",
+    "model_id": "rules-baseline",
+    "kind": "deterministic keyword baseline"
+  },
+  "disclaimer": "Reference backend only; not tuned-model quality. External datasets are evaluation-only and were not used for SFT.",
+  "datasets": {
+    "bitext": {
+      "source_url": "https://huggingface.co/datasets/bitext/Bitext-customer-support-llm-chatbot-training-dataset/resolve/main/Bitext_Sample_Customer_Support_Training_Dataset_27K_responses-v11.csv?download=true",
+      "revision": "430d1a89bd93bd1fa23c16f29dd53e73f0087443",
+      "sha256": "6f81102b0100b97b8468eb04368033a23206bf1fde9d53500d5806ec1001a434",
+      "rows": 26872,
+      "mapped_rows": 7986,
+      "unmapped_rows": 18886,
+      "mapping": {
+        "cancel_order": "cancellation_request",
+        "get_refund": "refund_request",
+        "track_refund": "refund_request",
+        "track_order": "order_status",
+        "contact_human_agent": "human_handoff",
+        "contact_customer_service": "human_handoff",
+        "complaint": "complaint",
+        "payment_issue": "payment_issue"
+      },
+      "mapping_sha256": "3171f9598a4b8a6e9fe81a960d9716380f1cb1b4666f6cf5b65a354e15a80e7a",
+      "metrics": {
+        "n": 7986,
+        "accuracy": 0.3098,
+        "macro_f1": 0.4354,
+        "per_label": {
+          "cancellation_request": {
+            "support": 998,
+            "precision": 1.0,
+            "recall": 0.4289,
+            "f1": 0.6003
+          },
+          "complaint": {
+            "support": 1000,
+            "precision": 1.0,
+            "recall": 0.311,
+            "f1": 0.4744
+          },
+          "human_handoff": {
+            "support": 1999,
+            "precision": 1.0,
+            "recall": 0.2426,
+            "f1": 0.3905
+          },
+          "order_status": {
+            "support": 995,
+            "precision": 0.8924,
+            "recall": 0.392,
+            "f1": 0.5447
+          },
+          "payment_issue": {
+            "support": 999,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "refund_request": {
+            "support": 1995,
+            "precision": 1.0,
+            "recall": 0.4311,
+            "f1": 0.6025
+          }
+        },
+        "confusion": {
+          "human_handoff -> other": 1514,
+          "refund_request -> other": 1088,
+          "payment_issue -> other": 999,
+          "refund_request -> refund_request": 860,
+          "complaint -> other": 689,
+          "order_status -> other": 605,
+          "cancellation_request -> other": 570,
+          "human_handoff -> human_handoff": 485,
+          "cancellation_request -> cancellation_request": 428,
+          "order_status -> order_status": 390,
+          "complaint -> complaint": 311,
+          "refund_request -> order_status": 47
+        }
+      },
+      "unmapped_overreach": {
+        "n": 18886,
+        "in_scope_predictions": 926,
+        "in_scope_rate": 0.049
+      }
+    },
+    "banking77": {
+      "source_url": "https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/master/banking_data/test.csv",
+      "sha256": "d12d6e3bc4c3103966ae786dc435913c0c563dfa328f5a3646d0e62cfeeb474d",
+      "rows": 3080,
+      "scope": "all rows are out-of-domain for a retailer",
+      "n": 3080,
+      "acceptable": 2681,
+      "acceptable_rate": 0.8705,
+      "false_accepts": 399,
+      "false_accept_rate": 0.1295,
+      "handoff_rate": 0.001,
+      "other_rate": 0.8695,
+      "accepted_by_intent": {
+        "replacement_request": 162,
+        "refund_request": 108,
+        "order_status": 59,
+        "cancellation_request": 42,
+        "payment_issue": 11,
+        "product_info": 7,
+        "return_request": 7,
+        "complaint": 3
+      }
+    },
+    "clinc150": {
+      "source_url": "https://raw.githubusercontent.com/clinc/oos-eval/master/data/data_full.json",
+      "sha256": "36923c3705a59e08fe9c3883d8bc2dd966ef93e22cb78ac41171782a698d56e0",
+      "rows": 1000,
+      "scope": "CLINC150 out-of-scope test split",
+      "n": 1000,
+      "acceptable": 967,
+      "acceptable_rate": 0.967,
+      "false_accepts": 33,
+      "false_accept_rate": 0.033,
+      "handoff_rate": 0.008,
+      "other_rate": 0.959,
+      "accepted_by_intent": {
+        "product_info": 10,
+        "refund_request": 8,
+        "order_status": 8,
+        "cancellation_request": 2,
+        "return_request": 2,
+        "warranty_claim": 1,
+        "complaint": 1,
+        "replacement_request": 1
+      }
+    }
+  }
+}

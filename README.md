@@ -24,10 +24,11 @@ a deterministic rules baseline; the fine-tune is scripted but not yet run (statu
 | Retrieval (BM25 + query expansion) | working | recall@4 = 1.00, MRR 0.89, n=14 |
 | Benchmark, 310 frozen cases | 310/310, 0 safety violations | `EVALUATION_RESULTS/benchmark-rules-baseline.{json,md}` |
 | SFT dataset | 3,156 train / 312 dev, no family leakage | `EVALUATION_RESULTS/dataset-validation.json` |
+| External NLU probe | rules baseline: Bitext 30.98% acc / 0.435 macro-F1, BANKING77 12.95% false accepts, CLINC150 96.70% OOS recall | `EVALUATION_RESULTS/external-nlu-rules.{json,md}` |
 | QLoRA fine-tune | **NOT RUN** (no GPU) | `training/`, `EXPERIMENT_LOG.md` |
 | Local 4-bit GGUF serving | **NOT RUN** (no weights yet) | `training/README.md` |
 
-Test suite: `81 passed` (78 unit/API + 3 browser). Lint: `ruff check` clean. Benchmark latency (rules baseline, CPU, SQLite):
+Test suite: `85 passed` (82 unit/API + 3 browser). Lint: `ruff check` clean. Benchmark latency (rules baseline, CPU, SQLite):
 p50 16 ms, p95 24 ms (p95 up to 49 ms under load), 310 cases in ~27 s.
 
 ## Quickstart
@@ -50,6 +51,7 @@ refunded, shipped-but-not-delivered, expired warranty.
 python -m eval.harness            # 310-case benchmark -> EVALUATION_RESULTS/
 python -m eval.retrieval_eval     # retrieval recall/MRR
 python -m eval.scorecard          # weighted scorecard from measured artefacts
+python -m eval.external.nlu_probe # Bitext/BANKING77/CLINC150 probe (downloads ~22 MB once)
 python -m data_gen.generate --variants 4   # regenerate SFT data
 python -m data_gen.validate       # schema/leakage/duplicate checks
 python -m data_gen.spotcheck      # 50-row semantic audit
@@ -112,6 +114,23 @@ This is the **rules baseline**, i.e. the reference implementation that shares th
 evaluator. It proves the harness and the gates work. It is *not* a model score, and the scorecard leaves
 the model-quality rows blank on purpose.
 
+## External evaluation
+
+`DATASET_RESEARCH.md` surveys public test datasets and selects a four-layer external plan:
+τ³-bench retail for policy-following tool use, Bitext + CLINC150 + BANKING77 for intent and
+out-of-scope behaviour, and AgentDojo + InjecAgent for injection. The first offline layer has been
+run against the **rules baseline**:
+
+| Probe | Result | Evidence |
+|---|---|---|
+| Bitext mapped intents (7,986 rows) | 30.98% accuracy, macro-F1 0.435 | `EVALUATION_RESULTS/external-nlu-rules.{json,md}` |
+| BANKING77 out-of-domain (3,080) | 12.95% false accepts | same |
+| CLINC150 out-of-scope (1,000) | 96.70% OOS recall, 3.30% false accepts | same |
+
+These are **reference-backend numbers, not tuned-model quality**. They quantify the documented
+keyword-detection weakness and motivate the fine-tune; τ³-bench and the injection suites remain
+**NOT RUN**.
+
 ## Repository layout
 
 ```
@@ -127,8 +146,11 @@ src/support_ai/
 eval/               harness (310 cases), retrieval eval, scorecard
 data_gen/           SFT generator (policy-grounded teacher) + validator
 training/           QLoRA train, merge/quantise, Kaggle notebook (NOT RUN)
-tests/              81 tests: policy, tools, orchestrator, retrieval, API, browser
+tests/              85 tests: policy, tools, orchestrator, retrieval, API, external NLU, browser
 ```
+
+`DATASET_RESEARCH.md` covers external test data (τ³-bench, Bitext, CLINC150, BANKING77, AgentDojo,
+InjecAgent) and the planned evaluation layers.
 
 ## Design decisions that matter in review
 
@@ -141,7 +163,8 @@ tests/              81 tests: policy, tools, orchestrator, retrieval, API, brows
 ## What is deliberately missing
 
 - A trained adapter and GGUF (needs a free-tier T4; `training/README.md` has the exact commands).
-- Base-vs-tuned comparison, response-quality rubric, intent/entity F1 (all need the model or human labels).
+- Base-vs-tuned comparison, response-quality rubric, tuned-model intent/entity F1 (all need the model
+  or human labels; a rules-baseline external NLU probe is in `EVALUATION_RESULTS/`).
 - Browser-level screenshots for the portfolio page.
 - Postgres/Redis/containers — planned for the "deployment" story, not needed for correctness here.
 

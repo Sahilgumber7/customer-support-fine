@@ -83,3 +83,11 @@ One entry per material choice: what, why, and what was rejected. Add entries as 
 **Why:** two identical requests can pass the pre-check at the same moment. The database unique constraint is the authority; on `IntegrityError` the tool rolls back and returns the winner's stored result. The concurrency test asserts one refund row across six racing callers. A loser that cannot find a stored result fails closed with `TOOL_FAILURE`.
 **Rejected:** application-level locks (single-process only, and hide the real guarantee); dedupe only before execution (a race window remains).
 **Limitation:** SQLite may return `database is locked` under heavy contention before the unique constraint fires; that also fails closed and is surfaced as a tool failure rather than a second payment.
+
+## D21 — External datasets are evaluation-only, with a versioned mapping
+**Why:** public support/intent corpora can test generalisation, but training on them would contaminate the only clean external check and blur the project's synthetic-data provenance. Every adapter must pin the dataset revision, publish its intent/tool mapping before running, and count unmapped rows instead of dropping them. Raw rows stay out of git; only aggregate JSON and the mapping are committed.
+**Rejected:** mixing external rows into `data/sft/` for a quick size boost; hand-picking only rows the rules backend already handles.
+
+## D22 — τ³-bench retail is the primary external analogue; intent corpora are secondary
+**Why:** τ³ is the only shortlisted suite that combines a written policy, mutable order state, tool calls and an LLM user, which is the same shape as this agent. Bitext/CLINC150/BANKING77 are cheap offline probes of NLU and abstention, not agent quality. Reporting them separately stops an intent score from being mistaken for policy-following ability.
+**Rejected:** treating a Bitext accuracy number as the headline external result; building a custom user simulator before using the published one.

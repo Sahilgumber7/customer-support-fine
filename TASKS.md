@@ -9,7 +9,7 @@
 - [x] Environment inspected: no GPU, 8 GB RAM, 14.7 GB free, Python 3.12.6
 - [x] `git init` + handoff commit `02b0acf`
 - [x] Repo skeleton, `pyproject.toml`, pytest + ruff config
-- [x] `pytest` green (81 tests)
+- [x] `pytest` green (85 tests)
 
 ## Phase 1 — Foundation (no model)
 - [x] SQLAlchemy schema, 21 tables (`src/support_ai/db.py`)
@@ -37,6 +37,9 @@
 - [x] Automated + manual spot-check of 50 samples (`python -m data_gen.spotcheck` → 0 findings);
       found and fixed two copy defects (self-contradictory order status, fixture id in a clarification)
 - [x] `DATASET_CARD.md`
+- [x] External dataset research and shortlist (`DATASET_RESEARCH.md`): τ³-bench, Bitext, BANKING77,
+      CLINC150, AgentDojo, InjecAgent; licences and sizes verified from publisher cards (2026-10-23)
+- [x] External evaluation suites: offline NLU probe run; τ³/injection tracked in Phase 7
 
 ## Phase 3 — Baseline
 - [x] Rules baseline backend (no LLM) behind the same interface as the model
@@ -76,6 +79,12 @@
       six-way concurrency race on the same refund (exactly one row)
 - [~] Profiling: per-turn p50/p95 and wall clock measured; peak RSS and tok/s need the GGUF
 - [x] Error analysis → 6 root causes fixed (see below) → re-ran green
+- [x] External NLU probe: Bitext mapped intents + BANKING77 OOD + CLINC150 OOS (rules backend) →
+      `EVALUATION_RESULTS/external-nlu-rules.{json,md}`; 7,986 mapped rows, 30.98% accuracy / 0.435 macro-F1,
+      12.95% BANKING77 false accepts, 96.70% CLINC150 OOS recall
+- [!] τ³-bench retail adapter + 50-task evaluation — blocked on API keys + tool mapping
+- [!] AgentDojo/InjecAgent mapped injection subset — blocked on an untrusted-content channel
+- [ ] Response-quality rubric + 100 labels (needs second rater or judge)
 
 ### Error analysis log (benchmark iteration)
 1. Rules `plan` only ran gather then one act → three-step flows never executed → bounded re-plan loop (D13).
@@ -88,8 +97,8 @@
 ## Phase 8 — Release
 - [x] Scorecard, measured-only (`EVALUATION_RESULTS/scorecard.{json,md}`): 70/70 measured, 30 unmeasured
 - [x] `ARCHITECTURE.md`, `EVALUATION.md`, `SECURITY.md`, `DEPLOYMENT.md`, `MODEL_CARD.md`,
-      `DATASET_CARD.md`, `README.md`
-- [x] Clean-room install from README alone: fresh venv, `pip install -e ".[dev]"`, `pytest` → 78 passed
-      + 3 UI skipped (browser not installed in that venv), `eval.harness` → 310/310 (2026-10-23)
+      `DATASET_CARD.md`, `DATASET_RESEARCH.md`, `README.md`
+- [x] Clean-room install from README alone: fresh venv, `pip install -e ".[dev]"`, `pytest` → 82 passed
+      + 1 module skip (3 browser tests not collected), `eval.harness` → 310/310 (2026-10-23, rerun)
 - [x] Final report content assembled in `PROJECT_STATUS.md` + `README.md` + `EVALUATION.md`
 - [x] Optional: screenshots captured in `docs/screenshots/` and embedded in `README.md`

@@ -87,3 +87,23 @@ Template:
 - Results: none. No loss, no wall time, no checkpoint hash. Nothing in this repo claims otherwise.
 - Verdict: blocked on hardware. Downstream EXP-T02 (base vs tuned benchmark) and EXP-T03 (CPU latency/RSS)
   are likewise not run.
+
+## EXP-E01 — external NLU probe, rules baseline
+- Date: 2026-10-23
+- Purpose: test the keyword baseline on public support data and measure OOD acceptance before the tuned model exists
+- Hardware: 4 logical CPUs, 8.0 GB RAM, no GPU, Windows 11, Python 3.12.6 | host: local
+- Subject: `RulesBackend.understand` (no LLM)
+- Dataset (evaluation-only, raw rows cached in `artifacts/external/`, gitignored):
+  - Bitext customer support, HF revision `430d1a89…`, sha256 `6f81102b…`, 26,872 rows; 7,986 mapped rows
+  - BANKING77 test, sha256 `d12d6e3b…`, 3,080 rows
+  - CLINC150 `oos_test`, sha256 `36923c37…`, 1,000 rows
+- Command: `python -m eval.external.nlu_probe`
+- Artifacts: `EVALUATION_RESULTS/external-nlu-rules.json`, `.md`
+- Results:
+  - Bitext mapped intents: accuracy 30.98%, macro-F1 0.435; recall 0.0 (`payment_issue`) to 0.431 (`refund_request`)
+  - BANKING77 OOD: 399/3,080 false accepts (12.95%); handoff 3 rows
+  - CLINC150 OOS: 967/1,000 acceptable (96.70% recall); 33 false accepts (3.30%)
+- Verdict: keep as a reference-backend probe. It quantifies the documented keyword weakness; it is
+  **not** a tuned-model score and does not change the scorecard's NOT MEASURED intent row.
+- Notes: strict 8-of-27 Bitext mapping; excluded intents are reported as unmapped, never dropped.
+  No external rows were used for SFT.

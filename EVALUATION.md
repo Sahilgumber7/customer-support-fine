@@ -5,7 +5,7 @@ CPU-only, 8 GB RAM, SQLite). Artefacts live in `EVALUATION_RESULTS/` and are nev
 
 ```powershell
 $env:PYTHONPATH="src;."
-python -m pytest -q                 # 81 passed (3 browser tests skip without Chromium)
+python -m pytest -q                 # 85 passed (3 browser tests skip without Chromium)
 python -m eval.harness              # 310 cases  -> benchmark-rules-baseline.{json,md}
 python -m eval.retrieval_eval       # 14 queries -> retrieval.json
 python -m data_gen.validate         # dataset checks -> dataset-validation.json
@@ -106,6 +106,26 @@ must be extracted; deny-only families must not carry a mutating tool or a succes
 name the order. Result: **0 findings** (`EVALUATION_RESULTS/dataset-spotcheck.json`). The first run
 caught two copy defects, both fixed and the dataset regenerated (`DATASET_CARD.md`).
 
+## 5A. External NLU probe (measured, reference backend)
+
+Source: `EVALUATION_RESULTS/external-nlu-rules.{json,md}` (run: `python -m eval.external.nlu_probe`).
+This measures the **rules baseline**, not the fine-tuned model, and it is not part of the weighted
+scorecard. It is an external-validity check of the documented keyword weakness.
+
+| Probe | n | Result | Reading |
+|---|---:|---|---|
+| Bitext mapped intents | 7,986 | 30.98% accuracy, macro-F1 0.435 | paraphrase/recall failure |
+| BANKING77 out-of-domain | 3,080 | 12.95% false accepts | "replace my card" becomes `replacement_request` |
+| CLINC150 out-of-scope | 1,000 | 96.70% OOS recall, 3.30% false accepts | `other` is a safe default here |
+
+Bitext mapping is deliberately strict (8 of 27 intents; questions, order edits, shipping and account
+operations are excluded). Per-intent recall ranges from 0.0 (`payment_issue`, 999 rows) to 0.431
+(`refund_request`); precision is 1.0 on four of six mapped intents because the baseline only fires on
+explicit cue words. The full confusion matrix and mapping hash are in the JSON artifact.
+
+Caveats: Bitext is synthetic; the mapping is a judgement call; BANKING77/CLINC150 are domain-shifted;
+none of this is a tuned-model score. The scorecard's intent/entity row stays **NOT MEASURED**.
+
 ## 6. Scorecard (measured only)
 
 Source: `EVALUATION_RESULTS/scorecard.md`.
@@ -150,6 +170,8 @@ Source: `EVALUATION_RESULTS/scorecard.md`.
 
 | Item | Why | How to run |
 |---|---|---|
+| τ³-bench retail (50 tasks) | needs an LLM user simulator/API key + tool mapping | `DATASET_RESEARCH.md` §3.1 |
+| AgentDojo / InjecAgent | no untrusted-content channel to attack | `DATASET_RESEARCH.md` §3.5–3.6 |
 | QLoRA fine-tune | no CUDA device on build machine | `training/README.md`, Kaggle T4 |
 | Base vs tuned benchmark | needs the adapter/GGUF | `python -m eval.harness --backend llamacpp` |
 | Peak RSS / throughput on 4-bit CPU serving | needs the GGUF | noted as a gap in `MODEL_CARD.md` |
