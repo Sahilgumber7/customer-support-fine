@@ -27,6 +27,7 @@ Optional extras:
 ```powershell
 pip install pytest httpx     # tests
 pip install ruff             # lint
+pip install playwright && playwright install chromium   # browser tests
 pip install llama-cpp-python # only for GGUF serving
 ```
 
@@ -97,7 +98,7 @@ the GGUF is mounted as a volume rather than baked into the image.
 
 | Check | Command |
 |---|---|
-| Tests | `python -m pytest -q` (78 expected) |
+| Tests | `python -m pytest -q` (81 expected; 3 skip without Chromium) |
 | Lint | `python -m ruff check src tests eval data_gen` |
 | Benchmark | `python -m eval.harness` |
 | Retrieval | `python -m eval.retrieval_eval` |

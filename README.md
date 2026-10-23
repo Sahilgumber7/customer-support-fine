@@ -19,13 +19,14 @@ a deterministic rules baseline; the fine-tune is scripted but not yet run (statu
 | Tools + authorisation + idempotency | working | 24 tests, `tests/test_tools.py` |
 | Orchestrator (bounded state machine) | working | 19 tests, `tests/test_orchestrator.py` |
 | API + demo auth + ops console | working | 6 tests, `tests/test_api.py` |
+| Browser UI (Chromium) | working | 3 tests, `tests/test_ui.py` |
 | Retrieval (BM25 + query expansion) | working | recall@4 = 1.00, MRR 0.89, n=14 |
 | Benchmark, 310 frozen cases | 310/310, 0 safety violations | `EVALUATION_RESULTS/benchmark-rules-baseline.{json,md}` |
 | SFT dataset | 3,156 train / 312 dev, no family leakage | `EVALUATION_RESULTS/dataset-validation.json` |
 | QLoRA fine-tune | **NOT RUN** (no GPU) | `training/`, `EXPERIMENT_LOG.md` |
 | Local 4-bit GGUF serving | **NOT RUN** (no weights yet) | `training/README.md` |
 
-Test suite: `78 passed`. Lint: `ruff check` clean. Benchmark latency (rules baseline, CPU, SQLite):
+Test suite: `81 passed` (78 unit/API + 3 browser). Lint: `ruff check` clean. Benchmark latency (rules baseline, CPU, SQLite):
 p50 16 ms, p95 24 ms (p95 up to 49 ms under load), 310 cases in ~27 s.
 
 ## Quickstart
@@ -52,6 +53,14 @@ python -m data_gen.generate --variants 4   # regenerate SFT data
 python -m data_gen.validate       # schema/leakage/duplicate checks
 python -m data_gen.spotcheck      # 50-row semantic audit
 ```
+
+## Screenshots
+
+Captured from the running app (rules baseline, synthetic data).
+
+| Customer chat | Ops console |
+|---|---|
+| ![chat](docs/screenshots/customer-chat.png) | ![ops](docs/screenshots/ops-console.png) |
 
 ## How a turn flows
 
@@ -117,7 +126,7 @@ src/support_ai/
 eval/               harness (310 cases), retrieval eval, scorecard
 data_gen/           SFT generator (policy-grounded teacher) + validator
 training/           QLoRA train, merge/quantise, Kaggle notebook (NOT RUN)
-tests/              78 tests: policy, tools, orchestrator, retrieval, API
+tests/              81 tests: policy, tools, orchestrator, retrieval, API, browser
 ```
 
 ## Design decisions that matter in review
@@ -132,7 +141,7 @@ tests/              78 tests: policy, tools, orchestrator, retrieval, API
 
 - A trained adapter and GGUF (needs a free-tier T4; `training/README.md` has the exact commands).
 - Base-vs-tuned comparison, response-quality rubric, intent/entity F1 (all need the model or human labels).
-- Browser-level UI tests; the API beneath the UI is covered.
+- Browser-level screenshots for the portfolio page.
 - Postgres/Redis/containers — planned for the "deployment" story, not needed for correctness here.
 
 ## Suggested resume line (only claims backed above)

@@ -5,7 +5,7 @@ CPU-only, 8 GB RAM, SQLite). Artefacts live in `EVALUATION_RESULTS/` and are nev
 
 ```powershell
 $env:PYTHONPATH="src;."
-python -m pytest -q                 # 78 passed
+python -m pytest -q                 # 81 passed (3 browser tests skip without Chromium)
 python -m eval.harness              # 310 cases  -> benchmark-rules-baseline.{json,md}
 python -m eval.retrieval_eval       # 14 queries -> retrieval.json
 python -m data_gen.validate         # dataset checks -> dataset-validation.json

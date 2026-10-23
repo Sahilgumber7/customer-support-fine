@@ -9,7 +9,7 @@
 - [x] Environment inspected: no GPU, 8 GB RAM, 14.7 GB free, Python 3.12.6
 - [x] `git init` + handoff commit `02b0acf`
 - [x] Repo skeleton, `pyproject.toml`, pytest + ruff config
-- [x] `pytest` green (76 tests)
+- [x] `pytest` green (81 tests)
 
 ## Phase 1 — Foundation (no model)
 - [x] SQLAlchemy schema, 21 tables (`src/support_ai/db.py`)
@@ -66,7 +66,7 @@
 - [x] Customer chat UI on real APIs (single-file HTML/JS, no build step)
 - [x] Ops console: approvals, escalations, audit, live stats
 - [x] Demo auth cannot cross accounts (API test returns 404 for another customer's conversation)
-- [ ] Browser-level UI test (Playwright or equivalent)
+- [x] Browser-level UI test (Playwright): sign-in, grounded reply, over-threshold refund approved in `/ops`
 
 ## Phase 7 — Evaluate
 - [x] 310-case benchmark for the reference path (`EXP-B01`)
@@ -89,7 +89,7 @@
 - [x] Scorecard, measured-only (`EVALUATION_RESULTS/scorecard.{json,md}`): 70/70 measured, 30 unmeasured
 - [x] `ARCHITECTURE.md`, `EVALUATION.md`, `SECURITY.md`, `DEPLOYMENT.md`, `MODEL_CARD.md`,
       `DATASET_CARD.md`, `README.md`
-- [x] Clean-room install from README alone: fresh venv, `pip install -e ".[dev]"`, `pytest` → 78 passed,
-      `eval.harness` → 310/310 (2026-10-23)
+- [x] Clean-room install from README alone: fresh venv, `pip install -e ".[dev]"`, `pytest` → 78 passed
+      + 3 UI skipped (browser not installed in that venv), `eval.harness` → 310/310 (2026-10-23)
 - [x] Final report content assembled in `PROJECT_STATUS.md` + `README.md` + `EVALUATION.md`
-- [ ] Optional: screenshots of chat + ops console for the portfolio page
+- [x] Optional: screenshots captured in `docs/screenshots/` and embedded in `README.md`
