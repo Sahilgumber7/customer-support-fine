@@ -9,11 +9,12 @@
 | Path | `data/sft/train.jsonl`, `data/sft/dev.jsonl` (gitignored; regenerate with `python -m data_gen.generate --variants 4`) |
 | Generator | `data_gen/generate.py` |
 | Validator | `data_gen/validate.py` → `EVALUATION_RESULTS/dataset-validation.json` |
-| Train / dev examples | **3,156 / 312** |
-| Scenario cases | 310 |
+| Train / dev examples | **2,796 / 312** |
+| Scenario cases | 280 used for SFT; 30 adversarial scenarios excluded |
 | Variants per case | 4 (surface rephrasings) |
-| Families | 15 |
-| Held-out families | `human_handoff`, `multi_item_ambiguity`, `refund_already_refunded` |
+| Families | 13 |
+| Held-out dev families | `human_handoff`, `multi_item_ambiguity`, `refund_already_refunded` |
+| Excluded adversarial families | `cross_account`, `prompt_injection` |
 | Teacher | rules baseline + deterministic policy engine (no external LLM) |
 | Seed | 11 |
 | PII | none — synthetic names, `example.test` emails, fake orders |
@@ -33,22 +34,26 @@ in real rows (amounts, RMA codes, statuses) rather than invented text.
 
 Families and counts (scenario level):
 
-| Family | n | | Family | n |
-|---|---|---|---|---|
-| refund_eligible | 35 | | cancellation | 20 |
-| order_status | 30 | | warranty | 20 |
-| return_eligible | 30 | | refund_already_refunded | 15 |
-| refund_out_of_window | 25 | | cross_account | 15 |
-| refund_over_threshold | 25 | | prompt_injection | 15 |
-| replacement_damaged | 25 | | missing_information | 15 |
-| refund_final_sale | 20 | | multi_item_ambiguity | 10 |
-| | | | human_handoff | 10 |
+| Family | n | Family | n |
+|---|---|---|---|
+| refund_eligible | 35 | cancellation | 20 |
+| order_status | 30 | warranty | 20 |
+| return_eligible | 30 | refund_already_refunded | 15 |
+| refund_out_of_window | 25 | missing_information | 15 |
+| refund_over_threshold | 25 | multi_item_ambiguity | 10 |
+| replacement_damaged | 25 | human_handoff | 10 |
+| refund_final_sale | 20 | | |
+
+`cross_account` (15 scenarios) and `prompt_injection` (15 scenarios) are deliberately **not** in the
+SFT data; they form the held-out adversarial evaluation in `eval/adversarial.py`. Counts above sum to
+280 used scenarios.
 
 ## Splitting
 
-Splits are **by scenario family**, not by row. The three held-out families never appear in `train.jsonl`
-in any variant, so `dev` measures behaviour on unseen task types. The validator fails the build if any
-family name appears in both splits.
+Splits are **by scenario family**, not by row. The three held-out dev families never appear in
+`train.jsonl` in any variant, so `dev` measures behaviour on unseen task types. The validator fails the
+build if any family name appears in both splits. The two adversarial families are excluded from both
+splits and evaluated separately, so the tuned model cannot memorise the attacks it is scored on.
 
 Exact-duplicate message sets are removed during generation (`dropped` in the run output); the validator
 independently re-checks for duplicates.
@@ -59,7 +64,7 @@ independently re-checks for duplicates.
 present; the response parses as JSON and contains the task's required keys; `customer_message` is
 non-empty for `respond`; message sets are unique; and no family crosses the split boundary.
 
-Result: `{"ok": true, "errors": [], "rows": {"train": 3156, "dev": 312}}`.
+Result: `{"ok": true, "errors": [], "rows": {"train": 2796, "dev": 312}}`.
 
 `data_gen/spotcheck.py` samples 50 rows by stride (35 train, 15 dev) and audits properties the schema
 cannot see: an order id in the message must be extracted; deny-only families must carry no mutating
@@ -83,8 +88,10 @@ a behaviour-cloning dataset for a bounded agent, not a general chat corpus.
 - **Teacher is the baseline.** The dataset inherits the baseline's keyword-driven intent errors. A model
   trained on it may reproduce them.
 - **Synthetic only.** No real transcripts, accents, typos, code-switching, or multi-intent messages.
-- **Small.** 3,156 examples is a smoke-scale SFT set for a 3B model. Scaling needs more templates,
+- **Small.** 2,796 examples is a smoke-scale SFT set for a 3B model. Scaling needs more templates,
   handwritten paraphrases, and real (consented) transcripts.
+- **Adversarial refusal is not supervised.** Injection and cross-account families are excluded, so the
+  model has no positive examples of refusing them; the policy/tool layer is the enforcement point.
 - **Class imbalance.** Refund and status families dominate; complaint tone and payment disputes are thin.
 - **Labels encode policy version 2026.1.** If `policy.py` changes, the dataset must be regenerated rather
   than patched.

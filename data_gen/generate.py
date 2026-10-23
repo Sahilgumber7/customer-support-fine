@@ -38,6 +38,10 @@ SUFFIXES = ["", " Thanks.", " Please help.", " Can you sort this out?", " It's u
 # Held out entirely from training so the dev set is a real generalisation check.
 DEV_FAMILIES = {"human_handoff", "multi_item_ambiguity", "refund_already_refunded"}
 
+# Adversarial families are evaluated only. Keeping them out of SFT prevents the tuned model from
+# learning the exact attacks it is scored on.
+EXCLUDED_FAMILIES = {"cross_account", "prompt_injection"}
+
 
 def variant_message(base: str, i: int, rng: random.Random) -> str:
     if i == 0:
@@ -89,7 +93,11 @@ def main() -> None:
     families: dict[str, int] = {}
     seen: set[str] = set()
     dropped = 0
+    excluded = 0
     for case in cases:
+        if case.family in EXCLUDED_FAMILIES:
+            excluded += 1
+            continue
         gold = gold_turns(case, retriever)
         split = "dev" if case.family in DEV_FAMILIES else "train"
         families[case.family] = families.get(case.family, 0) + 1
@@ -175,9 +183,12 @@ def main() -> None:
         "seed": args.seed,
         "variants_per_case": args.variants,
         "cases": len(cases),
+        "cases_used": len(cases) - excluded,
+        "excluded_cases": excluded,
         "examples": {k: len(v) for k, v in splits.items()},
         "families": families,
         "dev_families_held_out": sorted(DEV_FAMILIES),
+        "adversarial_families_excluded": sorted(EXCLUDED_FAMILIES),
         "note": "Variants are surface rephrasings only; they are not independent scenarios.",
     }
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")

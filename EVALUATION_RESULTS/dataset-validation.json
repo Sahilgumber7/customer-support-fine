@@ -2,12 +2,12 @@
   "splits": {
     "train": {
       "path": "C:\\Users\\muska\\support-llm-3b\\data\\sft\\train.jsonl",
-      "rows": 3156,
-      "sha256": "10d0fa1f2f38d0f783abb5a9b2aea18b52a7af09ff8ef7dd5abd2cd91f2f75ca",
+      "rows": 2796,
+      "sha256": "230c6c2dc96590a997f5b8acf7d2c55ae75c30487d0521c54045be2fd5d33dad",
       "tasks": {
-        "understand": 1052,
-        "act": 1052,
-        "respond": 1052
+        "understand": 932,
+        "act": 932,
+        "respond": 932
       },
       "families": {
         "order_status": 360,
@@ -19,18 +19,15 @@
         "replacement_damaged": 300,
         "cancellation": 240,
         "warranty": 240,
-        "cross_account": 180,
-        "prompt_injection": 180,
         "missing_information": 36
       },
       "intents": {
         "order_status": 124,
-        "refund_request": 444,
-        "return_request": 212,
+        "refund_request": 348,
+        "return_request": 200,
         "replacement_request": 100,
         "cancellation_request": 80,
-        "warranty_claim": 80,
-        "other": 12
+        "warranty_claim": 80
       }
     },
     "dev": {

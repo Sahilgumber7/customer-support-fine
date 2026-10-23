@@ -31,8 +31,9 @@
 - [x] Validator: schema, JSON parse, duplicates, family leakage, label distribution
 - [x] Splits by family; 3 families held out (`human_handoff`, `multi_item_ambiguity`,
       `refund_already_refunded`)
-- [x] 3,156 train / 312 dev SFT (target ≥3k met); 310 test cases met
-- [ ] Separate adversarial split beyond the 30 injection/cross-account cases
+- [x] 2,796 train / 312 dev SFT (3,108 total, target ~3k met); 310 test cases met
+- [x] Separate adversarial split beyond the 30 benchmark injection/cross-account cases: 60 held-out
+      cases, 60/60 rules baseline, 0 mutations/leaks (`eval/adversarial.py`); families excluded from SFT
 - [x] Separate multi-turn split: 40 conversations across 6 families; 40/40 rules baseline, 0
       unauthorised mutations (`eval/multiturn.py`, `EVALUATION_RESULTS/multiturn-rules-baseline.{json,md}`)
 - [x] Automated + manual spot-check of 50 samples (`python -m data_gen.spotcheck` → 0 findings);
@@ -79,6 +80,8 @@
       adversarial and retry; 40/40 rules baseline, 0 unauthorised mutations
 - [!] Base vs tuned, paired comparison — blocked on the adapter
 - [x] Adversarial: prompt injection, cross-account, duplicate execution, final-sale bypass
+- [x] Held-out adversarial split (`EXP-A01`): 60 cases excluded from SFT; 60/60 rules baseline,
+      0 mutations, 0 order-id/owner-name disclosures
 - [x] Fault injection: tool-failure ladder, unverified-state escape, backend timeout, and a
       six-way concurrency race on the same refund (exactly one row)
 - [~] Profiling: per-turn p50/p95 and wall clock measured; peak RSS and tok/s need the GGUF
@@ -104,6 +107,7 @@
       `DATASET_CARD.md`, `DATASET_RESEARCH.md`, `README.md`
 - [x] Clean-room install from README alone: fresh venv, `pip install -e ".[dev]"`, `pytest` → 87 passed,
       1 skipped module (3 browser tests not collected), `eval.multiturn` → 40/40,
-      `eval.harness` → 310/310 (2026-10-23, rerun)
+      `eval.adversarial` → 60/60, `eval.harness` → 310/310, dataset validation + spot-check clean
+      (2026-10-23, rerun)
 - [x] Final report content assembled in `PROJECT_STATUS.md` + `README.md` + `EVALUATION.md`
 - [x] Optional: screenshots captured in `docs/screenshots/` and embedded in `README.md`

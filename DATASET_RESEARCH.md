@@ -10,7 +10,7 @@ exist yet)._
 
 ## 1. Why external data at all?
 
-The current 310-case benchmark and the 3,156-row SFT set are both built by the same generator, and
+The current 310-case benchmark and the 3,108-row SFT set are both built by the same generator, and
 the benchmark shares the policy engine with the checker. That is a valid harness test, but it cannot
 answer four questions a reviewer will ask:
 

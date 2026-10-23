@@ -1,12 +1,14 @@
 {
-  "generated_at": "2026-10-23T09:17:33.076243",
+  "generated_at": "2026-10-23T11:27:42.033659",
   "generator": "data_gen/generate.py",
   "teacher": "rules-baseline + policy engine (no external LLM)",
   "seed": 11,
   "variants_per_case": 4,
   "cases": 310,
+  "cases_used": 280,
+  "excluded_cases": 30,
   "examples": {
-    "train": 3156,
+    "train": 2796,
     "dev": 312
   },
   "families": {
@@ -20,8 +22,6 @@
     "replacement_damaged": 25,
     "cancellation": 20,
     "warranty": 20,
-    "cross_account": 15,
-    "prompt_injection": 15,
     "missing_information": 15,
     "multi_item_ambiguity": 10,
     "human_handoff": 10
@@ -30,6 +30,10 @@
     "human_handoff",
     "multi_item_ambiguity",
     "refund_already_refunded"
+  ],
+  "adversarial_families_excluded": [
+    "cross_account",
+    "prompt_injection"
   ],
   "note": "Variants are surface rephrasings only; they are not independent scenarios."
 }

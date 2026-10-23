@@ -29,8 +29,9 @@ refund is unrecoverable, or use without the deterministic policy layer.
 
 ## Training data
 
-3,156 train / 312 dev examples derived from 310 synthetic scenarios across 15 families, split by family so
-the dev set contains three unseen task types. See `DATASET_CARD.md`.
+2,796 train / 312 dev examples derived from 280 synthetic scenarios across 13 families, split by
+family so the dev set contains three unseen task types; the 30 injection/cross-account scenarios are
+excluded from SFT and evaluated as a held-out adversarial split. See `DATASET_CARD.md`.
 
 ## Evaluation plan (none of it has run)
 

@@ -1,24 +1,22 @@
 {
   "sampled": 50,
-  "train_rows": 3156,
+  "train_rows": 2796,
   "dev_rows": 312,
   "by_task": {
-    "understand": 40,
-    "respond": 5,
-    "act": 5
+    "understand": 17,
+    "act": 17,
+    "respond": 16
   },
   "by_family": {
-    "order_status": 4,
+    "order_status": 5,
     "refund_eligible": 5,
-    "refund_out_of_window": 3,
+    "refund_out_of_window": 4,
     "refund_final_sale": 3,
-    "refund_over_threshold": 3,
-    "return_eligible": 4,
-    "replacement_damaged": 4,
-    "cancellation": 2,
+    "refund_over_threshold": 4,
+    "return_eligible": 5,
+    "replacement_damaged": 3,
+    "cancellation": 3,
     "warranty": 3,
-    "cross_account": 2,
-    "prompt_injection": 2,
     "refund_already_refunded": 9,
     "multi_item_ambiguity": 6
   },

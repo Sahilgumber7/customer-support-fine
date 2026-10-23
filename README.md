@@ -24,9 +24,10 @@ a deterministic rules baseline; the fine-tune is scripted but not yet run (statu
 | Browser UI (Chromium) | working | 3 tests, `tests/test_ui.py` |
 | Retrieval (BM25 + query expansion) | working | recall@4 = 1.00, MRR 0.89, n=14 |
 | Benchmark, 310 frozen cases | 310/310, 0 safety violations | `EVALUATION_RESULTS/benchmark-rules-baseline.{json,md}` |
-| SFT dataset | 3,156 train / 312 dev, no family leakage | `EVALUATION_RESULTS/dataset-validation.json` |
+| SFT dataset | 2,796 train / 312 dev, no family leakage; 30 adversarial scenarios excluded | `EVALUATION_RESULTS/dataset-validation.json` |
 | External NLU probe | rules baseline: Bitext 30.98% acc / 0.435 macro-F1, BANKING77 12.95% false accepts, CLINC150 96.70% OOS recall | `EVALUATION_RESULTS/external-nlu-rules.{json,md}` |
 | Multi-turn suite | 40/40 (6 families), 0 unauthorised mutations | `EVALUATION_RESULTS/multiturn-rules-baseline.{json,md}` |
+| Held-out adversarial suite | 60/60, 0 mutations, 0 disclosures | `EVALUATION_RESULTS/adversarial-rules-baseline.{json,md}` |
 | QLoRA fine-tune | **NOT RUN** (no GPU) | `training/`, `EXPERIMENT_LOG.md` |
 | Local 4-bit GGUF serving | **NOT RUN** (no weights yet) | `training/README.md` |
 
@@ -52,6 +53,7 @@ refunded, shipped-but-not-delivered, expired warranty.
 ```powershell
 python -m eval.harness            # 310-case benchmark -> EVALUATION_RESULTS/
 python -m eval.multiturn          # 40 multi-turn conversations -> EVALUATION_RESULTS/
+python -m eval.adversarial        # 60 held-out injection/cross-account cases -> EVALUATION_RESULTS/
 python -m eval.retrieval_eval     # retrieval recall/MRR
 python -m eval.scorecard          # weighted scorecard from measured artefacts
 python -m eval.external.nlu_probe # Bitext/BANKING77/CLINC150 probe (downloads ~22 MB once)
@@ -136,6 +138,16 @@ The reference backend carries an order/SKU from earlier **customer** turns and r
 only after an explicit clarification prompt; it never takes an entity invented by the assistant. This is
 still a rules-baseline result, not tuned-model quality, and it is not folded into the weighted scorecard.
 
+## Held-out adversarial evaluation
+
+`prompt_injection` and `cross_account` are **excluded from SFT**. `eval/adversarial.py` adds 60 unseen
+cases (30 injection attempts on ineligible orders, 30 requests for another customer's order) and runs
+them through the same orchestrator, tools and policy engine.
+
+Result: **60/60 passed, 0 financial/order mutations, 0 order-id or owner-name disclosures**
+(`EVALUATION_RESULTS/adversarial-rules-baseline.{json,md}`). The attacks are scripted templates, not a
+red-team study; AgentDojo/InjecAgent remain `NOT RUN`.
+
 ## External evaluation
 
 `DATASET_RESEARCH.md` surveys public test datasets and selects a four-layer external plan:
@@ -165,7 +177,7 @@ src/support_ai/
   db.py             SQLAlchemy schema (SQLite; Postgres URL is a config swap)
   seed.py           deterministic synthetic company
   api.py, web.py    FastAPI + customer chat + ops console
-eval/               harness (310 cases), multi-turn suite (40 conversations), retrieval eval, scorecard
+eval/               harness (310 cases), multi-turn suite (40), adversarial suite (60), retrieval eval, scorecard
 data_gen/           SFT generator (policy-grounded teacher) + validator
 training/           QLoRA train, merge/quantise, Kaggle notebook (NOT RUN)
 tests/              90 tests: policy, tools, orchestrator, multi-turn, retrieval, API, external NLU, browser
@@ -185,7 +197,6 @@ InjecAgent) and the planned evaluation layers.
 ## What is deliberately missing
 
 - A trained adapter and GGUF (needs a free-tier T4; `training/README.md` has the exact commands).
-- A separate adversarial split held out from SFT, beyond the 30 injection/cross-account benchmark cases.
 - Base-vs-tuned comparison, response-quality rubric, tuned-model intent/entity F1 (all need the model
   or human labels; a rules-baseline external NLU probe is in `EVALUATION_RESULTS/`).
 - Postgres/Redis/containers — planned for the "deployment" story, not needed for correctness here.

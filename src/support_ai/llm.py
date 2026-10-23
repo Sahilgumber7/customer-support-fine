@@ -445,9 +445,9 @@ class RulesBackend:
             if ok and tool == "create_replacement_request":
                 return FinalResponse(
                     customer_message=(
-                        f"A replacement for {data.get('sku')} is on its way — reference "
-                        f"REP-{data.get('replacement_request_id'):04d}, usually arriving in about "
-                        f"{data.get('eta_days')} days. Keep the original item until it arrives."
+                        f"A replacement for {data.get('sku')} on {data.get('order_id')} is on its way — "
+                        f"reference REP-{data.get('replacement_request_id'):04d}, usually arriving in "
+                        f"about {data.get('eta_days')} days. Keep the original item until it arrives."
                     ),
                     cites=["POL-RET"],
                 )
@@ -472,8 +472,9 @@ class RulesBackend:
             if ok and tool == "create_support_ticket":
                 return FinalResponse(
                     customer_message=(
-                        f"I've opened a warranty claim for you — ticket #{data.get('ticket_id')}. "
-                        "Our team will review the fault and confirm the next step by email."
+                        f"I've opened a warranty claim for {order.get('order_id') or 'your item'} — "
+                        f"ticket #{data.get('ticket_id')}. Our team will review the fault and confirm "
+                        "the next step by email."
                     ),
                     cites=["POL-WAR"],
                 )
@@ -643,11 +644,14 @@ def _deny_copy(code: str, order: dict, eligibility: dict) -> str:
         "WARRANTY_EXPIRED": "The warranty on that item has expired.",
         "MISSING_ITEM": "Which item should this apply to? The order has more than one product.",
     }
-    return mapping.get(
+    copy = mapping.get(
         reason,
         "I couldn't complete that automatically. I can pass it to a colleague who can help.",
     )
-
+    order_id = order.get("order_id")
+    if order_id and reason not in {"UNKNOWN_ORDER", "NOT_OWNER", "ALREADY_REFUNDED"}:
+        return f"{order_id}: {copy}"
+    return copy
 
 # --- fine-tuned model backend ----------------------------------------------
 
