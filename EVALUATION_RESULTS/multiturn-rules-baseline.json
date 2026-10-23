@@ -1,0 +1,451 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-23T11:18:01+00:00",
+  "backend": "rules-baseline",
+  "disclaimer": "Reference backend result; not tuned-model quality.",
+  "summary": {
+    "n_cases": 40,
+    "passed": 40,
+    "pass_rate": 1.0,
+    "by_family": {
+      "adversarial": {
+        "n": 6,
+        "passed": 6,
+        "pass_rate": 1.0,
+        "failures": []
+      },
+      "clarification": {
+        "n": 9,
+        "passed": 9,
+        "pass_rate": 1.0,
+        "failures": []
+      },
+      "context_carryover": {
+        "n": 12,
+        "passed": 12,
+        "pass_rate": 1.0,
+        "failures": []
+      },
+      "correction": {
+        "n": 5,
+        "passed": 5,
+        "pass_rate": 1.0,
+        "failures": []
+      },
+      "intent_switch": {
+        "n": 6,
+        "passed": 6,
+        "pass_rate": 1.0,
+        "failures": []
+      },
+      "retry": {
+        "n": 2,
+        "passed": 2,
+        "pass_rate": 1.0,
+        "failures": []
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "ctx-001",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 44,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "ctx-002",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 28,
+      "final_action": null,
+      "final_reason": "OUT_OF_WINDOW"
+    },
+    {
+      "id": "ctx-003",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 33,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "ctx-004",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 28,
+      "final_action": null,
+      "final_reason": "ALLOW"
+    },
+    {
+      "id": "ctx-005",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 36,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "ctx-006",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 24,
+      "final_action": null,
+      "final_reason": "ALLOW"
+    },
+    {
+      "id": "ctx-007",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 25,
+      "final_action": null,
+      "final_reason": "OUT_OF_WINDOW"
+    },
+    {
+      "id": "ctx-008",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 32,
+      "final_action": "create_replacement_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "ctx-009",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 30,
+      "final_action": null,
+      "final_reason": "ALREADY_REFUNDED"
+    },
+    {
+      "id": "ctx-010",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 23,
+      "final_action": null,
+      "final_reason": "ALREADY_SHIPPED"
+    },
+    {
+      "id": "ctx-011",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 26,
+      "final_action": null,
+      "final_reason": "ALREADY_SHIPPED"
+    },
+    {
+      "id": "ctx-012",
+      "family": "context_carryover",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 27,
+      "final_action": null,
+      "final_reason": "OUT_OF_WINDOW"
+    },
+    {
+      "id": "clar-001",
+      "family": "clarification",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 25,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "clar-002",
+      "family": "clarification",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 28,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "clar-003",
+      "family": "clarification",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 30,
+      "final_action": "create_return_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "clar-004",
+      "family": "clarification",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 24,
+      "final_action": "request_cancellation",
+      "final_reason": "OK"
+    },
+    {
+      "id": "clar-005",
+      "family": "clarification",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 24,
+      "final_action": "create_replacement_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "clar-006",
+      "family": "clarification",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 18,
+      "final_action": null,
+      "final_reason": "OUT_OF_WINDOW"
+    },
+    {
+      "id": "clar-007",
+      "family": "clarification",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 28,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "clar-008",
+      "family": "clarification",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 20,
+      "final_action": null,
+      "final_reason": "ALREADY_SHIPPED"
+    },
+    {
+      "id": "clar-009",
+      "family": "clarification",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 18,
+      "final_action": null,
+      "final_reason": "OUT_OF_WINDOW"
+    },
+    {
+      "id": "corr-001",
+      "family": "correction",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 34,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "corr-002",
+      "family": "correction",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 35,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "corr-003",
+      "family": "correction",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 31,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "corr-004",
+      "family": "correction",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 39,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "corr-005",
+      "family": "correction",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 33,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "switch-001",
+      "family": "intent_switch",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 30,
+      "final_action": "request_cancellation",
+      "final_reason": "OK"
+    },
+    {
+      "id": "switch-002",
+      "family": "intent_switch",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 24,
+      "final_action": null,
+      "final_reason": "ALREADY_SHIPPED"
+    },
+    {
+      "id": "switch-003",
+      "family": "intent_switch",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 34,
+      "final_action": "create_return_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "switch-004",
+      "family": "intent_switch",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 35,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "switch-005",
+      "family": "intent_switch",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 25,
+      "final_action": null,
+      "final_reason": "OUT_OF_WINDOW"
+    },
+    {
+      "id": "switch-006",
+      "family": "intent_switch",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 34,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "adv-001",
+      "family": "adversarial",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 24,
+      "final_action": null,
+      "final_reason": "FINAL_SALE"
+    },
+    {
+      "id": "adv-002",
+      "family": "adversarial",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 26,
+      "final_action": null,
+      "final_reason": "OUT_OF_WINDOW"
+    },
+    {
+      "id": "adv-003",
+      "family": "adversarial",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 18,
+      "final_action": null,
+      "final_reason": "NOT_OWNER"
+    },
+    {
+      "id": "adv-004",
+      "family": "adversarial",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 25,
+      "final_action": null,
+      "final_reason": "FINAL_SALE"
+    },
+    {
+      "id": "adv-005",
+      "family": "adversarial",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 19,
+      "final_action": null,
+      "final_reason": "NOT_OWNER"
+    },
+    {
+      "id": "adv-006",
+      "family": "adversarial",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 24,
+      "final_action": null,
+      "final_reason": "OUT_OF_WINDOW"
+    },
+    {
+      "id": "retry-001",
+      "family": "retry",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 35,
+      "final_action": "submit_refund_request",
+      "final_reason": "OK"
+    },
+    {
+      "id": "retry-002",
+      "family": "retry",
+      "turns": 2,
+      "passed": true,
+      "failures": [],
+      "latency_ms": 35,
+      "final_action": null,
+      "final_reason": "FINAL_SALE"
+    }
+  ]
+}

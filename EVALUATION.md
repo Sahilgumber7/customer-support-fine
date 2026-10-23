@@ -5,8 +5,9 @@ CPU-only, 8 GB RAM, SQLite). Artefacts live in `EVALUATION_RESULTS/` and are nev
 
 ```powershell
 $env:PYTHONPATH="src;."
-python -m pytest -q                 # 85 passed (3 browser tests skip without Chromium)
+python -m pytest -q                 # 90 passed (3 browser tests skip without Chromium)
 python -m eval.harness              # 310 cases  -> benchmark-rules-baseline.{json,md}
+python -m eval.multiturn            # 40 conversations -> multiturn-rules-baseline.{json,md}
 python -m eval.retrieval_eval       # 14 queries -> retrieval.json
 python -m data_gen.validate         # dataset checks -> dataset-validation.json
 python -m eval.scorecard            # weighted scorecard -> scorecard.{json,md}
@@ -126,6 +127,28 @@ explicit cue words. The full confusion matrix and mapping hash are in the JSON a
 Caveats: Bitext is synthetic; the mapping is a judgement call; BANKING77/CLINC150 are domain-shifted;
 none of this is a tuned-model score. The scorecard's intent/entity row stays **NOT MEASURED**.
 
+## 5B. Multi-turn conversations (measured, reference backend)
+
+Source: `EVALUATION_RESULTS/multiturn-rules-baseline.{json,md}` (run: `python -m eval.multiturn`).
+Each case runs a scripted conversation through one orchestrator and one seeded database, then checks the
+final action, persisted rows, order status and reply grounding. This is separate from the 310 single-turn
+cases and is **not** folded into the weighted scorecard.
+
+| Family | n | Pass | What it probes |
+|---|---:|---:|---|
+| context carry-over | 12 | 100% | order id supplied in an earlier customer turn |
+| clarification | 9 | 100% | assistant asks for the order/item, customer answers, request completes |
+| correction | 5 | 100% | customer replaces a wrong order id |
+| intent switch | 6 | 100% | status → refund / return / cancellation on the same order |
+| adversarial | 6 | 100% | injection or cross-account request after a normal turn |
+| retry | 2 | 100% | repeated refund request, exactly one financial row |
+| **Total** | **40** | **40 (100%)** | **0 unauthorised mutations** |
+
+The reference backend carries an order/SKU only from earlier **customer** messages, never from an
+assistant reply. It reuses the pending intent (and its reason) only when the last assistant message was a
+clarification prompt for the order number, product or item. Retries remain idempotent. This is a
+rules-baseline result, not tuned-model quality; the model must reproduce it in a later run.
+
 ## 6. Scorecard (measured only)
 
 Source: `EVALUATION_RESULTS/scorecard.md`.
@@ -149,6 +172,7 @@ Source: `EVALUATION_RESULTS/scorecard.md`.
 | Check | Result |
 |---|---|
 | Cross-account disclosure | 0 / 15 |
+| Cross-account or injection mutation in multi-turn suite | 0 / 6 |
 | Unauthorised refund executed | 0 / 310 |
 | Duplicate financial execution | 0 (idempotency tests) |
 | Policy-bypass mutation (injection, final sale, window) | 0 |
@@ -161,6 +185,8 @@ Source: `EVALUATION_RESULTS/scorecard.md`.
 - **Template-shaped data.** Messages are generated from per-family templates. A model can learn surface
   patterns; the held-out-family dev split mitigates but does not eliminate this.
 - **Small retrieval set.** 14 queries is a smoke test, not an IR benchmark.
+- **Scripted multi-turn suite.** 40 hand-written conversations cannot cover every correction or
+  clarification pattern; they are a regression net, not a human-factorial study.
 - **No human rubric.** Helpfulness, tone and hallucination rate are unscored.
 - **Rules intent detection is keyword-driven.** Paraphrases without a cue word ("the box turned up
   empty") fall through to a help-centre answer. This is the specific gap the fine-tuned model is meant to

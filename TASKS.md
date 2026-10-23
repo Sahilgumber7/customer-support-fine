@@ -9,7 +9,7 @@
 - [x] Environment inspected: no GPU, 8 GB RAM, 14.7 GB free, Python 3.12.6
 - [x] `git init` + handoff commit `02b0acf`
 - [x] Repo skeleton, `pyproject.toml`, pytest + ruff config
-- [x] `pytest` green (85 tests)
+- [x] `pytest` green (90 tests)
 
 ## Phase 1 — Foundation (no model)
 - [x] SQLAlchemy schema, 21 tables (`src/support_ai/db.py`)
@@ -33,7 +33,8 @@
       `refund_already_refunded`)
 - [x] 3,156 train / 312 dev SFT (target ≥3k met); 310 test cases met
 - [ ] Separate adversarial split beyond the 30 injection/cross-account cases
-- [ ] Separate multi-turn split
+- [x] Separate multi-turn split: 40 conversations across 6 families; 40/40 rules baseline, 0
+      unauthorised mutations (`eval/multiturn.py`, `EVALUATION_RESULTS/multiturn-rules-baseline.{json,md}`)
 - [x] Automated + manual spot-check of 50 samples (`python -m data_gen.spotcheck` → 0 findings);
       found and fixed two copy defects (self-contradictory order status, fixture id in a clarification)
 - [x] `DATASET_CARD.md`
@@ -62,7 +63,8 @@
 - [x] BM25 retrieval with document version + citation, query expansion
 - [x] Orchestrator wired to `RulesBackend`; `LlamaCppBackend` implemented and unused
 - [x] Escalation + approval queue paths, ops decision endpoint
-- [~] Multi-turn context: last 10 messages passed to the backend; no per-turn entity carry-over test
+- [x] Multi-turn context: last 10 messages passed to the backend; order/SKU carried from earlier
+      customer turns; pending intent + reason reused only after a clarification prompt; 5 tests + 40-case suite
 - [ ] Wire and validate the fine-tuned backend end-to-end (blocked on Phase 4)
 
 ## Phase 6 — Product
@@ -73,6 +75,8 @@
 
 ## Phase 7 — Evaluate
 - [x] 310-case benchmark for the reference path (`EXP-B01`)
+- [x] 40-case multi-turn suite (`EXP-M01`): context carry-over, clarification, correction, intent switch,
+      adversarial and retry; 40/40 rules baseline, 0 unauthorised mutations
 - [!] Base vs tuned, paired comparison — blocked on the adapter
 - [x] Adversarial: prompt injection, cross-account, duplicate execution, final-sale bypass
 - [x] Fault injection: tool-failure ladder, unverified-state escape, backend timeout, and a
@@ -98,7 +102,8 @@
 - [x] Scorecard, measured-only (`EVALUATION_RESULTS/scorecard.{json,md}`): 70/70 measured, 30 unmeasured
 - [x] `ARCHITECTURE.md`, `EVALUATION.md`, `SECURITY.md`, `DEPLOYMENT.md`, `MODEL_CARD.md`,
       `DATASET_CARD.md`, `DATASET_RESEARCH.md`, `README.md`
-- [x] Clean-room install from README alone: fresh venv, `pip install -e ".[dev]"`, `pytest` → 82 passed
-      + 1 module skip (3 browser tests not collected), `eval.harness` → 310/310 (2026-10-23, rerun)
+- [x] Clean-room install from README alone: fresh venv, `pip install -e ".[dev]"`, `pytest` → 87 passed,
+      1 skipped module (3 browser tests not collected), `eval.multiturn` → 40/40,
+      `eval.harness` → 310/310 (2026-10-23, rerun)
 - [x] Final report content assembled in `PROJECT_STATUS.md` + `README.md` + `EVALUATION.md`
 - [x] Optional: screenshots captured in `docs/screenshots/` and embedded in `README.md`

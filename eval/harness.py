@@ -379,7 +379,8 @@ def generate(n_target: int = 310, seed_value: int = 7) -> list[Case]:
 # --- environment ------------------------------------------------------------
 
 
-def build_env(case: Case, retriever: Retriever) -> tuple[Session, int, Conversation]:
+def fresh_env() -> tuple[Session, int, Conversation]:
+    """A fresh seeded company plus one open conversation for customer 1."""
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
@@ -387,6 +388,18 @@ def build_env(case: Case, retriever: Retriever) -> tuple[Session, int, Conversat
     factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
     session = factory()
     seed(session)
+
+    ticket = Ticket(customer_id=1, subject="eval", status="open", channel="chat")
+    session.add(ticket)
+    session.flush()
+    conv = Conversation(ticket_id=ticket.id, customer_id=1, status="open")
+    session.add(conv)
+    session.commit()
+    return session, conv.id, conv
+
+
+def build_env(case: Case, retriever: Retriever) -> tuple[Session, int, Conversation]:
+    session, conv_id, conv = fresh_env()
 
     order_id = case.order_id
     product = session.get(Product, case.sku)
@@ -429,13 +442,8 @@ def build_env(case: Case, retriever: Retriever) -> tuple[Session, int, Conversat
                 idempotency_key=f"{order_id}:prior",
             )
         )
-    ticket = Ticket(customer_id=1, subject="eval", status="open", channel="chat")
-    session.add(ticket)
-    session.flush()
-    conv = Conversation(ticket_id=ticket.id, customer_id=1, status="open")
-    session.add(conv)
     session.commit()
-    return session, conv.id, conv
+    return session, conv_id, conv
 
 
 # --- scoring ----------------------------------------------------------------

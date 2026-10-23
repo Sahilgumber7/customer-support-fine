@@ -19,16 +19,18 @@ a deterministic rules baseline; the fine-tune is scripted but not yet run (statu
 | Policy engine (pure, no LLM) | working | 22 unit tests, `tests/test_policy.py` |
 | Tools + authorisation + idempotency | working | 25 tests, `tests/test_tools.py` |
 | Orchestrator (bounded state machine) | working | 20 tests, `tests/test_orchestrator.py` |
+| Multi-turn context carry-over | working | 5 tests, `tests/test_multiturn.py`; 40-case suite |
 | API + demo auth + ops console | working | 6 tests, `tests/test_api.py` |
 | Browser UI (Chromium) | working | 3 tests, `tests/test_ui.py` |
 | Retrieval (BM25 + query expansion) | working | recall@4 = 1.00, MRR 0.89, n=14 |
 | Benchmark, 310 frozen cases | 310/310, 0 safety violations | `EVALUATION_RESULTS/benchmark-rules-baseline.{json,md}` |
 | SFT dataset | 3,156 train / 312 dev, no family leakage | `EVALUATION_RESULTS/dataset-validation.json` |
 | External NLU probe | rules baseline: Bitext 30.98% acc / 0.435 macro-F1, BANKING77 12.95% false accepts, CLINC150 96.70% OOS recall | `EVALUATION_RESULTS/external-nlu-rules.{json,md}` |
+| Multi-turn suite | 40/40 (6 families), 0 unauthorised mutations | `EVALUATION_RESULTS/multiturn-rules-baseline.{json,md}` |
 | QLoRA fine-tune | **NOT RUN** (no GPU) | `training/`, `EXPERIMENT_LOG.md` |
 | Local 4-bit GGUF serving | **NOT RUN** (no weights yet) | `training/README.md` |
 
-Test suite: `85 passed` (82 unit/API + 3 browser). Lint: `ruff check` clean. Benchmark latency (rules baseline, CPU, SQLite):
+Test suite: `90 passed` (87 unit/API + 3 browser). Lint: `ruff check` clean. Benchmark latency (rules baseline, CPU, SQLite):
 p50 16 ms, p95 24 ms (p95 up to 49 ms under load), 310 cases in ~27 s.
 
 ## Quickstart
@@ -49,6 +51,7 @@ refunded, shipped-but-not-delivered, expired warranty.
 
 ```powershell
 python -m eval.harness            # 310-case benchmark -> EVALUATION_RESULTS/
+python -m eval.multiturn          # 40 multi-turn conversations -> EVALUATION_RESULTS/
 python -m eval.retrieval_eval     # retrieval recall/MRR
 python -m eval.scorecard          # weighted scorecard from measured artefacts
 python -m eval.external.nlu_probe # Bitext/BANKING77/CLINC150 probe (downloads ~22 MB once)
@@ -114,6 +117,25 @@ This is the **rules baseline**, i.e. the reference implementation that shares th
 evaluator. It proves the harness and the gates work. It is *not* a model score, and the scorecard leaves
 the model-quality rows blank on purpose.
 
+## Multi-turn evaluation (reference backend)
+
+The single-turn benchmark cannot see whether context survives a conversation. `eval/multiturn.py` runs
+40 scripted conversations through one orchestrator and one seeded database per case:
+
+| Family | n | Pass | What it probes |
+|---|---:|---:|---|
+| context carry-over | 12 | 100% | order id supplied in turn 1, used in turn 2 |
+| clarification | 9 | 100% | assistant asks for the order / item, then completes |
+| correction | 5 | 100% | customer replaces a wrong order id |
+| intent switch | 6 | 100% | status → refund / return / cancellation on the same order |
+| adversarial | 6 | 100% | injection or cross-account request after a normal turn |
+| retry | 2 | 100% | repeated refund request creates exactly one financial row |
+
+Result: **40/40 passed**, 0 unauthorised mutations (`EVALUATION_RESULTS/multiturn-rules-baseline.{json,md}`).
+The reference backend carries an order/SKU from earlier **customer** turns and reuses the pending intent
+only after an explicit clarification prompt; it never takes an entity invented by the assistant. This is
+still a rules-baseline result, not tuned-model quality, and it is not folded into the weighted scorecard.
+
 ## External evaluation
 
 `DATASET_RESEARCH.md` surveys public test datasets and selects a four-layer external plan:
@@ -143,10 +165,10 @@ src/support_ai/
   db.py             SQLAlchemy schema (SQLite; Postgres URL is a config swap)
   seed.py           deterministic synthetic company
   api.py, web.py    FastAPI + customer chat + ops console
-eval/               harness (310 cases), retrieval eval, scorecard
+eval/               harness (310 cases), multi-turn suite (40 conversations), retrieval eval, scorecard
 data_gen/           SFT generator (policy-grounded teacher) + validator
 training/           QLoRA train, merge/quantise, Kaggle notebook (NOT RUN)
-tests/              85 tests: policy, tools, orchestrator, retrieval, API, external NLU, browser
+tests/              90 tests: policy, tools, orchestrator, multi-turn, retrieval, API, external NLU, browser
 ```
 
 `DATASET_RESEARCH.md` covers external test data (τ³-bench, Bitext, CLINC150, BANKING77, AgentDojo,
@@ -163,9 +185,9 @@ InjecAgent) and the planned evaluation layers.
 ## What is deliberately missing
 
 - A trained adapter and GGUF (needs a free-tier T4; `training/README.md` has the exact commands).
+- A separate adversarial split held out from SFT, beyond the 30 injection/cross-account benchmark cases.
 - Base-vs-tuned comparison, response-quality rubric, tuned-model intent/entity F1 (all need the model
   or human labels; a rules-baseline external NLU probe is in `EVALUATION_RESULTS/`).
-- Browser-level screenshots for the portfolio page.
 - Postgres/Redis/containers — planned for the "deployment" story, not needed for correctness here.
 
 ## Suggested resume line (only claims backed above)

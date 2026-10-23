@@ -91,3 +91,8 @@ One entry per material choice: what, why, and what was rejected. Add entries as 
 ## D22 — τ³-bench retail is the primary external analogue; intent corpora are secondary
 **Why:** τ³ is the only shortlisted suite that combines a written policy, mutable order state, tool calls and an LLM user, which is the same shape as this agent. Bitext/CLINC150/BANKING77 are cheap offline probes of NLU and abstention, not agent quality. Reporting them separately stops an intent score from being mistaken for policy-following ability.
 **Rejected:** treating a Bitext accuracy number as the headline external result; building a custom user simulator before using the published one.
+
+## D23 — Carry customer-supplied entities and the pending request across a clarification turn
+**Why:** a customer answers "which order?" with just `ORD-1010`, or "which product?" with "the speaker". Re-parsing only the current message made the agent repeat the question or lose the request. The rules backend now inherits an order id or SKU from earlier **customer** turns, and if the last assistant message was a clarification prompt (order number, product or item), it also reuses that customer's pending intent and reason. Assistant-authored ids are never trusted as customer input.
+**Rejected:** replaying the whole transcript through keyword detection on every turn (stale intents and false positives); letting the model infer the customer id or order ownership from history (identity stays server-side).
+**Limitation:** this closes the scripted clarification patterns, not every natural follow-up. The 40-case suite is the regression net; the tuned model still has to reproduce the behaviour.

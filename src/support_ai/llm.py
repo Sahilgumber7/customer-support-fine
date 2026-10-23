@@ -53,6 +53,74 @@ def _extract_reason(text: str) -> str | None:
     return None
 
 
+def _last_user_entity(history: list[dict[str, str]], pattern: re.Pattern[str]) -> str | None:
+    """Carry an entity the customer already supplied, never one invented by the assistant."""
+    for turn in reversed(history):
+        if turn.get("role") != "user":
+            continue
+        match = pattern.search(turn.get("content", ""))
+        if match:
+            return match.group(0).upper()
+    return None
+
+
+def _detect_intent(low: str) -> str:
+    if re.search(r"\b(cancel|cancellation)\b", low):
+        return "cancellation_request"
+    if re.search(r"\b(replacement|replace|exchange)\b", low):
+        return "replacement_request"
+    if re.search(r"\b(return|send (it|them) back)\b", low):
+        return "return_request"
+    if re.search(r"\bwarranty|guarantee\b", low):
+        return "warranty_claim"
+    if re.search(r"\b(charged twice|double charge|duplicate charge)\b", low):
+        return "payment_issue"
+    if re.search(r"\b(refund|money back|reimburse)\b", low) or re.search(
+        r"\b(broken|damaged|faulty|defective|not working|doesn'?t work|stopped working|"
+        r"falling apart|ripped|empty box|arrived empty|missing item)\b",
+        low,
+    ):
+        return "refund_request"
+    if re.search(
+        r"\b(where('s| is)|tracking|track|delivered|shipping status|order status|eta)\b", low
+    ):
+        return "order_status"
+    if re.search(r"\b(size|sizing|compatible|spec|dimension|how do i use|waterproof|battery)\b", low):
+        return "product_info"
+    if re.search(r"\b(human|agent|person|representative|manager|supervisor)\b", low):
+        return "human_handoff"
+    if re.search(r"\b(angry|unacceptable|terrible|worst|complaint|disappointed|furious)\b", low):
+        return "complaint"
+    return "other"
+
+
+def _intent_from_clarification(history: list[dict[str, str]]) -> str | None:
+    """Reuse the request that prompted the assistant's last clarification question."""
+    last_assistant = next(
+        (i for i in range(len(history) - 1, -1, -1) if history[i].get("role") == "assistant"),
+        None,
+    )
+    if last_assistant is None:
+        return None
+    prompt = history[last_assistant].get("content", "").lower()
+    if not any(cue in prompt for cue in ("order number", "which product", "which item")):
+        return None
+    for i in range(last_assistant - 1, -1, -1):
+        if history[i].get("role") == "user":
+            previous = _detect_intent(history[i].get("content", "").lower())
+            return previous if previous != "other" else None
+    return None
+
+
+def _last_user_reason(history: list[dict[str, str]]) -> str | None:
+    for turn in reversed(history):
+        if turn.get("role") == "user":
+            reason = _extract_reason(turn.get("content", ""))
+            if reason:
+                return reason
+    return None
+
+
 def _money(cents: int | None) -> str:
     if cents is None:
         return "unknown"
@@ -71,43 +139,14 @@ class RulesBackend:
         low = message.lower()
         order_match = ORDER_RE.search(message)
         sku_match = SKU_RE.search(message.upper())
-        entities = Entities(
-            order_id=order_match.group(0).upper() if order_match else None,
-            sku=sku_match.group(0).upper() if sku_match else None,
-            reason_code=_extract_reason(message) or None,
-        )
 
-        intent = "other"
-        if re.search(r"\b(cancel|cancellation)\b", low):
-            intent = "cancellation_request"
-        elif re.search(r"\b(replacement|replace|exchange)\b", low):
-            intent = "replacement_request"
-        elif re.search(r"\b(return|send (it|them) back)\b", low):
-            intent = "return_request"
-        elif re.search(r"\bwarranty|guarantee\b", low):
-            intent = "warranty_claim"
-        elif re.search(r"\b(charged twice|double charge|duplicate charge)\b", low):
-            intent = "payment_issue"
-        elif re.search(r"\b(refund|money back|reimburse)\b", low) or re.search(
-            r"\b(broken|damaged|faulty|defective|not working|doesn'?t work|stopped working|"
-            r"falling apart|ripped|empty box|arrived empty|missing item)\b",
-            low,
-        ):
-            intent = "refund_request"
-        elif re.search(
-            r"\b(where('s| is)|tracking|track|delivered|shipping status|order status|eta)\b", low
-        ):
-            intent = "order_status"
-        elif re.search(
-            r"\b(size|sizing|compatible|spec|dimension|how do i use|waterproof|battery)\b", low
-        ):
-            intent = "product_info"
-        elif re.search(r"\b(human|agent|person|representative|manager|supervisor)\b", low):
-            intent = "human_handoff"
-        elif re.search(
-            r"\b(angry|unacceptable|terrible|worst|complaint|disappointed|furious)\b", low
-        ):
-            intent = "complaint"
+        intent = _detect_intent(low)
+        carried_intent = False
+        if intent == "other":
+            previous = _intent_from_clarification(history)
+            if previous is not None:
+                intent = previous
+                carried_intent = True
 
         needs_order = intent in {
             "order_status",
@@ -118,6 +157,21 @@ class RulesBackend:
             "warranty_claim",
             "payment_issue",
         }
+        order_id = order_match.group(0).upper() if order_match else None
+        sku = sku_match.group(0).upper() if sku_match else None
+        if order_id is None and needs_order:
+            order_id = _last_user_entity(history, ORDER_RE)
+        if sku is None and order_match is None:
+            sku = _last_user_entity(history, SKU_RE)
+
+        reason = _extract_reason(message)
+        if reason is None and carried_intent:
+            reason = _last_user_reason(history)
+        entities = Entities(
+            order_id=order_id,
+            sku=sku,
+            reason_code=reason,
+        )
         if needs_order and not entities.order_id:
             return Understanding(
                 intent=intent,  # type: ignore[arg-type]

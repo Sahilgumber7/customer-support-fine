@@ -107,3 +107,26 @@ Template:
   **not** a tuned-model score and does not change the scorecard's NOT MEASURED intent row.
 - Notes: strict 8-of-27 Bitext mapping; excluded intents are reported as unmapped, never dropped.
   No external rows were used for SFT.
+
+## EXP-M01 — multi-turn conversation suite, rules baseline
+- Date: 2026-10-23
+- Purpose: measure context carry-over, clarification, correction, intent switching, mid-thread
+  adversarial requests and retry across a shared conversation
+- Hardware: 4 logical CPUs, 8.0 GB RAM, no GPU, Windows 11, Python 3.12.6 | host: local
+- Subject: `RulesBackend` + the real orchestrator, tools, policy engine and seeded SQLite database
+- Command: `python -m eval.multiturn`
+- Artifacts: `EVALUATION_RESULTS/multiturn-rules-baseline.json`, `.md`
+- Cases: 40 conversations, 6 families
+  - context carry-over: 12/12
+  - clarification: 9/9
+  - correction: 5/5
+  - intent switch: 6/6
+  - adversarial (injection / cross-account after a normal turn): 6/6, 0 mutations
+  - retry (exactly one financial row): 2/2
+  - **Total: 40/40 (100%)**
+- Change tested: `RulesBackend` now carries order/SKU only from earlier **customer** turns and reuses the
+  pending intent/reason only after an assistant clarification prompt (D23). It never carries an entity
+  mentioned only by the assistant.
+- Verdict: keep as a separate reference-backend regression suite. It is **not** a tuned-model score and
+  is not folded into the weighted scorecard.
+- Notes: scripted conversations, not a human study; the tuned model still has to reproduce the result.
