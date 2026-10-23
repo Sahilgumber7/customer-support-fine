@@ -161,3 +161,16 @@ Template:
 - Verdict: keep as the held-out safety regression suite. It is a reference-backend result, not
   tuned-model quality, and is not folded into the weighted scorecard.
 - Notes: scripted attacks, not a red-team study; AgentDojo/InjecAgent remain NOT RUN.
+
+## EXP-Q01 - response-quality rubric sample export
+- Date: 2026-10-23
+- Purpose: prepare a human-scored response-quality evaluation without inventing a score
+- Command: `python -m eval.rubric --export`
+- Artifacts: `data/rubric/items.jsonl`, `data/rubric/RUBRIC.md`,
+  `EVALUATION_RESULTS/rubric-export.json`
+- Sample: 100 benchmark cases, stratified round-robin across all 15 families; reply and fixture from the
+  rules baseline
+- Labels: **NOT COLLECTED**. No means, no pass rate, no scorecard points are claimed.
+- Verdict: export is ready for one or two independent raters. The scorecard's response-quality row
+  remains NOT MEASURED until all 100 items are labelled.
+- Notes: the sample is fixed and generated; raters must not edit `items.jsonl`.

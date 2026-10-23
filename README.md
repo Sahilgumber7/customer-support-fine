@@ -28,6 +28,7 @@ a deterministic rules baseline; the fine-tune is scripted but not yet run (statu
 | External NLU probe | rules baseline: Bitext 30.98% acc / 0.435 macro-F1, BANKING77 12.95% false accepts, CLINC150 96.70% OOS recall | `EVALUATION_RESULTS/external-nlu-rules.{json,md}` |
 | Multi-turn suite | 40/40 (6 families), 0 unauthorised mutations | `EVALUATION_RESULTS/multiturn-rules-baseline.{json,md}` |
 | Held-out adversarial suite | 60/60, 0 mutations, 0 disclosures | `EVALUATION_RESULTS/adversarial-rules-baseline.{json,md}` |
+| Response-quality rubric | 100-item sample exported; labels **NOT COLLECTED** | `data/rubric/`, `EVALUATION_RESULTS/rubric-export.json` |
 | QLoRA fine-tune | **NOT RUN** (no GPU) | `training/`, `EXPERIMENT_LOG.md` |
 | Local 4-bit GGUF serving | **NOT RUN** (no weights yet) | `training/README.md` |
 
@@ -54,6 +55,7 @@ refunded, shipped-but-not-delivered, expired warranty.
 python -m eval.harness            # 310-case benchmark -> EVALUATION_RESULTS/
 python -m eval.multiturn          # 40 multi-turn conversations -> EVALUATION_RESULTS/
 python -m eval.adversarial        # 60 held-out injection/cross-account cases -> EVALUATION_RESULTS/
+python -m eval.rubric --export    # 100-case human-rubric sample -> data/rubric/
 python -m eval.retrieval_eval     # retrieval recall/MRR
 python -m eval.scorecard          # weighted scorecard from measured artefacts
 python -m eval.external.nlu_probe # Bitext/BANKING77/CLINC150 probe (downloads ~22 MB once)
@@ -148,6 +150,16 @@ Result: **60/60 passed, 0 financial/order mutations, 0 order-id or owner-name di
 (`EVALUATION_RESULTS/adversarial-rules-baseline.{json,md}`). The attacks are scripted templates, not a
 red-team study; AgentDojo/InjecAgent remain `NOT RUN`.
 
+## Response-quality rubric (labels NOT COLLECTED)
+
+`eval/rubric.py --export` writes a deterministic, family-stratified sample of 100 benchmark cases to
+`data/rubric/items.jsonl`, with the customer message, assistant reply, action/reason and ground-truth
+fixture. A human rater scores factuality, policy adherence, completeness and clarity/empathy on 1–5, plus
+a 0/1 unsupported-claim flag; `--score` validates labels and reports descriptive means.
+
+**Status: `NOT RUN`.** No labels have been collected, so this is not a response-quality score and the
+scorecard's 15-point response row stays **NOT MEASURED**. The instructions are in `data/rubric/RUBRIC.md`.
+
 ## External evaluation
 
 `DATASET_RESEARCH.md` surveys public test datasets and selects a four-layer external plan:
@@ -177,7 +189,7 @@ src/support_ai/
   db.py             SQLAlchemy schema (SQLite; Postgres URL is a config swap)
   seed.py           deterministic synthetic company
   api.py, web.py    FastAPI + customer chat + ops console
-eval/               harness (310 cases), multi-turn suite (40), adversarial suite (60), retrieval eval, scorecard
+eval/               harness (310 cases), multi-turn (40), adversarial (60), rubric export, retrieval eval
 data_gen/           SFT generator (policy-grounded teacher) + validator
 training/           QLoRA train, merge/quantise, Kaggle notebook (NOT RUN)
 tests/              90 tests: policy, tools, orchestrator, multi-turn, retrieval, API, external NLU, browser
@@ -197,8 +209,9 @@ InjecAgent) and the planned evaluation layers.
 ## What is deliberately missing
 
 - A trained adapter and GGUF (needs a free-tier T4; `training/README.md` has the exact commands).
-- Base-vs-tuned comparison, response-quality rubric, tuned-model intent/entity F1 (all need the model
-  or human labels; a rules-baseline external NLU probe is in `EVALUATION_RESULTS/`).
+- Base-vs-tuned comparison, tuned-model intent/entity F1, and human labels for the exported 100-case
+  response-quality rubric (a rules-baseline external NLU probe and the rubric sample are in
+  `EVALUATION_RESULTS/`).
 - Postgres/Redis/containers — planned for the "deployment" story, not needed for correctness here.
 
 ## Suggested resume line (only claims backed above)

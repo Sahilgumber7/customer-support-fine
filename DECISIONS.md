@@ -101,3 +101,8 @@ One entry per material choice: what, why, and what was rejected. Add entries as 
 **Why:** if injection and cross-account examples appear in training, a tuned-model safety score on those same families measures memorisation, not refusal. `data_gen/generate.py` excludes both families; `eval/adversarial.py` supplies 60 new cases with unique orders and checks for mutations and disclosures. This also keeps the training corpus free of instructions designed to override policy.
 **Rejected:** training on the 30 benchmark adversarial cases and evaluating on them; mixing adversarial prompts into dev instead of excluding them (dev would still be a supervision signal during model selection).
 **Limitation:** the model gets no supervised refusal examples, so the deterministic policy/tool layer remains the enforcement point. The 60 attacks are templates, not a red-team corpus.
+
+## D25 - Response quality is human-scored; exporting a sample is not a score
+**Why:** factuality, policy explanation and tone need a judgement a keyword checker cannot make, and using the same rules engine as judge would be circular. `eval/rubric.py` exports 100 stratified cases with the reply and ground-truth fixture, validates independent label files, and reports means. Without labels it writes `status: NOT RUN`; the scorecard row stays unmeasured.
+**Rejected:** an LLM judge without a labelled human calibration set; turning groundedness/token checks into a "quality score" and calling it human-equivalent; filling the 15 scorecard points from the rules baseline.
+**Limitation:** one rater is a weak signal; two independent raters with reported agreement are needed before treating the means as stable.

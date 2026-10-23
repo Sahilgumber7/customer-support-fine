@@ -91,7 +91,9 @@
       12.95% BANKING77 false accepts, 96.70% CLINC150 OOS recall
 - [!] τ³-bench retail adapter + 50-task evaluation — blocked on API keys + tool mapping
 - [!] AgentDojo/InjecAgent mapped injection subset — blocked on an untrusted-content channel
-- [ ] Response-quality rubric + 100 labels (needs second rater or judge)
+- [~] Response-quality rubric: 100-case stratified sample + label validator exported
+      (`eval/rubric.py`, `data/rubric/`, `EVALUATION_RESULTS/rubric-export.json`); labels NOT COLLECTED,
+      so the scorecard row remains NOT MEASURED
 
 ### Error analysis log (benchmark iteration)
 1. Rules `plan` only ran gather then one act → three-step flows never executed → bounded re-plan loop (D13).

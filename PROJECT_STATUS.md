@@ -21,6 +21,7 @@ exist and pass their gates on this machine. The fine-tune and 4-bit serving runs
 | External NLU probe | Bitext mapped 7,986 rows: 30.98% accuracy / 0.435 macro-F1; BANKING77 OOD 12.95% false accepts; CLINC150 OOS recall 96.70% — `EVALUATION_RESULTS/external-nlu-rules.{json,md}` (rules baseline, not the tuned model) |
 | Multi-turn suite | 40/40 conversations across 6 families, 0 unauthorised mutations — `EVALUATION_RESULTS/multiturn-rules-baseline.{json,md}` (rules baseline, not the tuned model) |
 | Held-out adversarial suite | 60/60, 0 mutations, 0 order-id/owner-name disclosures — `EVALUATION_RESULTS/adversarial-rules-baseline.{json,md}` (rules baseline, not the tuned model) |
+| Response rubric sample | 100 stratified cases exported with fixture + reply; labels **NOT COLLECTED**, so the score is **NOT MEASURED** — `data/rubric/`, `EVALUATION_RESULTS/rubric-export.json` |
 | Clean-room install | fresh venv + `pip install -e ".[dev]"` → 87 passed, 1 skipped module (3 browser tests not collected), 40/40 multi-turn, 60/60 adversarial, 310/310 benchmark, dataset validation + spot-check clean (2026-10-23, rerun) |
 | Scorecard | 70.0 / 70 measured; 30 points explicitly unmeasured — `EVALUATION_RESULTS/scorecard.md` |
 | UI | served by FastAPI at `/` and `/ops`; 3 Chromium tests cover sign-in, a grounded reply and the approval flow |
@@ -50,7 +51,8 @@ BLOCKED: τ³-bench retail + AgentDojo/InjecAgent suites
 NEEDED:  an LLM API key for the τ³ user simulator; a deliberately untrusted content
          channel before injection results are meaningful
 UNBLOCKED WORK REMAINING:
-         - response-quality rubric + 100 labels (needs a second rater or judge)
+         - collect 100 human labels for the exported response-quality rubric
+           (sample + instructions already in data/rubric/)
 ```
 
 No fabricated results are present. `EVALUATION_RESULTS/` is generated, never hand-edited.
@@ -60,7 +62,8 @@ No fabricated results are present. `EVALUATION_RESULTS/` is generated, never han
 1. On a free T4: smoke run (`--max-steps 20`), then the full QLoRA run; append the produced
    `run_manifest.json` numbers to `EXPERIMENT_LOG.md` as `EXP-T01` and remove the NOT RUN marker only
    when the file exists. With the GGUF in place, run `python -m eval.harness --backend llamacpp`.
-2. Add the 100-case response-quality rubric (needs a second rater or judge); keep it out of SFT.
+2. Collect 100 independent human labels for `data/rubric/items.jsonl` (instructions in
+   `data/rubric/RUBRIC.md`); score only then, and keep the scorecard row NOT MEASURED until complete.
 3. Replace demo auth with OIDC and move SQLite to Postgres with Alembic before calling anything
    production-ready.
 

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-23T11:41:50+00:00",
+  "status": "NOT RUN \u2014 no labels collected",
+  "backend": "rules-baseline",
+  "n_items": 100,
+  "by_family": {
+    "cancellation": 7,
+    "cross_account": 7,
+    "human_handoff": 7,
+    "missing_information": 7,
+    "multi_item_ambiguity": 7,
+    "order_status": 7,
+    "prompt_injection": 7,
+    "refund_already_refunded": 7,
+    "refund_eligible": 7,
+    "refund_final_sale": 7,
+    "refund_out_of_window": 6,
+    "refund_over_threshold": 6,
+    "replacement_damaged": 6,
+    "return_eligible": 6,
+    "warranty": 6
+  },
+  "items_path": "data\\rubric\\items.jsonl",
+  "rubric_path": "data\\rubric\\RUBRIC.md",
+  "dimensions": [
+    "factuality",
+    "policy_adherence",
+    "completeness",
+    "clarity_empathy"
+  ],
+  "scale": "1-5 per dimension; unsupported_claims is a 0/1 flag",
+  "note": "This is a response-quality sample, not a score. The scorecard's 15-point response row stays NOT MEASURED until at least one human rater labels all 100 items."
+}

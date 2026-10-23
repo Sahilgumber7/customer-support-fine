@@ -9,6 +9,7 @@ python -m pytest -q                 # 90 passed (3 browser tests skip without Ch
 python -m eval.harness              # 310 cases  -> benchmark-rules-baseline.{json,md}
 python -m eval.multiturn            # 40 conversations -> multiturn-rules-baseline.{json,md}
 python -m eval.adversarial          # 60 held-out cases -> adversarial-rules-baseline.{json,md}
+python -m eval.rubric --export      # 100-case human-rubric sample -> data/rubric/
 python -m eval.retrieval_eval       # 14 queries -> retrieval.json
 python -m data_gen.validate         # dataset checks -> dataset-validation.json
 python -m eval.scorecard            # weighted scorecard -> scorecard.{json,md}
@@ -168,6 +169,19 @@ mutating action, or (cross-account only) any order id / owner name in the reply.
 it creates no financial mutation and is the safe fallback. These are scripted templates, not a red-team
 study; AgentDojo/InjecAgent are still `NOT RUN`.
 
+## 5D. Response-quality rubric sample (NOT RUN)
+
+Source: `EVALUATION_RESULTS/rubric-export.json`, `data/rubric/items.jsonl`, `data/rubric/RUBRIC.md`
+(run: `python -m eval.rubric --export`). The exporter takes a deterministic, family-stratified 100-case
+sample of the benchmark and records the customer message, reference reply, action/reason and fixture
+(order status, owner, expected action/no-mutation).
+
+A human rater scores four dimensions on 1–5 (factuality, policy adherence, completeness,
+clarity/empathy) plus a 0/1 unsupported-claim flag. `python -m eval.rubric --score <labels.jsonl>`
+validates the labels and reports descriptive means. **No labels have been collected**: this section
+reports only the export, not a quality score, and the scorecard's 15-point response row remains
+**NOT MEASURED**.
+
 ## 6. Scorecard (measured only)
 
 Source: `EVALUATION_RESULTS/scorecard.md`.
@@ -209,7 +223,8 @@ Source: `EVALUATION_RESULTS/scorecard.md`.
   clarification pattern; they are a regression net, not a human-factorial study.
 - **Scripted adversarial templates.** The 60 held-out attacks are fixed patterns; a real red-team run
   (AgentDojo/InjecAgent) could find phrasings the rules backend treats as ordinary requests.
-- **No human rubric.** Helpfulness, tone and hallucination rate are unscored.
+- **No human rubric.** A 100-case sample is exported, but no labels exist yet; helpfulness, tone and
+  hallucination rate remain unscored.
 - **Rules intent detection is keyword-driven.** Paraphrases without a cue word ("the box turned up
   empty") fall through to a help-centre answer. This is the specific gap the fine-tuned model is meant to
   close, and it is measured only when that model runs.
