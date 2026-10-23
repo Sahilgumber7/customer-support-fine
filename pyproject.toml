@@ -1,0 +1,36 @@
+[project]
+name = "support-ai"
+version = "0.1.0"
+description = "Policy-gated customer support agent over a fine-tuned 3B model (Qwen2.5-3B-Instruct + QLoRA)"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "sqlalchemy>=2.0",
+  "rank-bm25>=0.2.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["slow: slower integration tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["B008", "UP042"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+
+[tool.ruff.lint.per-file-ignores]
+"src/support_ai/web.py" = ["E501"]  # embedded HTML/CSS

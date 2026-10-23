@@ -1,0 +1,192 @@
+{
+  "n": 14,
+  "k": 4,
+  "recall_at_k": 1.0,
+  "mrr": 0.8929,
+  "rows": [
+    {
+      "query": "how many days do I have to send something back",
+      "expected": [
+        "pol_returns"
+      ],
+      "rank": 2,
+      "returned": [
+        "help_orders",
+        "pol_returns",
+        "pol_returns",
+        "pol_returns"
+      ]
+    },
+    {
+      "query": "can I return a final sale item if I changed my mind",
+      "expected": [
+        "pol_returns"
+      ],
+      "rank": 1,
+      "returned": [
+        "pol_returns",
+        "pol_returns",
+        "pol_returns",
+        "pol_returns"
+      ]
+    },
+    {
+      "query": "item arrived damaged what are my options",
+      "expected": [
+        "pol_returns"
+      ],
+      "rank": 2,
+      "returned": [
+        "help_orders",
+        "pol_returns",
+        "pol_returns",
+        "pol_returns"
+      ]
+    },
+    {
+      "query": "what is the refund approval limit",
+      "expected": [
+        "pol_refunds"
+      ],
+      "rank": 1,
+      "returned": [
+        "pol_refunds",
+        "pol_refunds",
+        "pol_refunds",
+        "pol_refunds"
+      ]
+    },
+    {
+      "query": "how long does a refund take to reach my card",
+      "expected": [
+        "pol_refunds",
+        "faq_general"
+      ],
+      "rank": 1,
+      "returned": [
+        "faq_general",
+        "pol_refunds",
+        "pol_refunds",
+        "pol_refunds"
+      ]
+    },
+    {
+      "query": "can I cancel after the parcel shipped",
+      "expected": [
+        "pol_refunds",
+        "help_orders"
+      ],
+      "rank": 1,
+      "returned": [
+        "help_orders",
+        "pol_refunds",
+        "pol_shipping",
+        "pol_returns"
+      ]
+    },
+    {
+      "query": "my parcel is late past the estimated delivery date",
+      "expected": [
+        "pol_shipping"
+      ],
+      "rank": 1,
+      "returned": [
+        "pol_shipping",
+        "pol_shipping",
+        "pol_shipping",
+        "help_orders"
+      ]
+    },
+    {
+      "query": "when is a parcel considered lost",
+      "expected": [
+        "pol_shipping"
+      ],
+      "rank": 1,
+      "returned": [
+        "pol_shipping",
+        "pol_shipping",
+        "pol_returns",
+        "pol_shipping"
+      ]
+    },
+    {
+      "query": "can I change the delivery address",
+      "expected": [
+        "pol_shipping"
+      ],
+      "rank": 2,
+      "returned": [
+        "help_orders",
+        "pol_shipping",
+        "pol_shipping",
+        "help_orders"
+      ]
+    },
+    {
+      "query": "is the fault covered under warranty",
+      "expected": [
+        "pol_warranty"
+      ],
+      "rank": 1,
+      "returned": [
+        "pol_warranty",
+        "pol_warranty",
+        "pol_warranty",
+        "faq_general"
+      ]
+    },
+    {
+      "query": "warranty excludes accidental damage",
+      "expected": [
+        "pol_warranty"
+      ],
+      "rank": 1,
+      "returned": [
+        "pol_warranty",
+        "pol_warranty",
+        "pol_warranty",
+        "pol_warranty"
+      ]
+    },
+    {
+      "query": "how do I track my order",
+      "expected": [
+        "help_orders"
+      ],
+      "rank": 1,
+      "returned": [
+        "help_orders",
+        "help_orders",
+        "help_orders",
+        "help_orders"
+      ]
+    },
+    {
+      "query": "I was charged twice for one order",
+      "expected": [
+        "faq_general"
+      ],
+      "rank": 1,
+      "returned": [
+        "faq_general",
+        "pol_refunds",
+        "help_orders",
+        "help_orders"
+      ]
+    },
+    {
+      "query": "which size should I order",
+      "expected": [
+        "faq_general"
+      ],
+      "rank": 1,
+      "returned": [
+        "faq_general",
+        "help_orders",
+        "help_orders",
+        "help_orders"
+      ]
+    }
+  ]
+}

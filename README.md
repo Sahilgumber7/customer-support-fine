@@ -1,41 +1,142 @@
-# support-llm-3b — handoff package
+# Northwind Support AI — policy-gated customer support agent
 
-A ready-to-run specification for building a fine-tuned 3B customer-support LLM platform, designed to be handed to an autonomous coding agent (Antigravity / agy / Claude Code / OpenCode).
+An end-to-end customer-support platform for a fictional retailer. The design puts a 3B model
+(Qwen2.5-3B-Instruct, QLoRA-tuned) in the *proposer* seat and keeps authority in deterministic code:
+every refund, return, replacement and cancellation is gated by a versioned policy engine, verified
+against stored state, and written to an append-only audit log. The same interfaces are served today by
+a deterministic rules baseline; the fine-tune is scripted but not yet run (status below).
 
-**Nothing is built yet.** This package is the contract; the agent executes it.
+> Status honesty: the **system, policy engine, tools, UI, dataset and evaluation harness are built and
+> tested on this machine**. The **GPU fine-tune and 4-bit serving run are scripted but NOT RUN** — the
+> build machine has no NVIDIA GPU, 8 GB RAM and ~15 GB free disk (`ENVIRONMENT_FACTS.md`). No model-quality
+> numbers are claimed. See `MODEL_CARD.md` and `EVALUATION_RESULTS/scorecard.md`.
 
-## Files
+## Verified status
 
-| File | Role |
-|---|---|
-| `LAUNCH_PROMPT.md` | Paste this as the agent's first message |
-| `AGENTS.md` | Autonomy protocol: how to work, when to stop, anti-fabrication rules |
-| `SPEC.md` | The engineering spec: model, data, agent, policy, eval, scorecard |
-| `ENVIRONMENT_FACTS.md` | Measured hardware — read before planning compute |
-| `TASKS.md` | Phased checklist |
-| `PROJECT_STATUS.md` | Live state; the agent rewrites it |
-| `DECISIONS.md` | Locked architecture choices + rejected alternatives |
-| `EXPERIMENT_LOG.md` | Append-only run log |
+| Area | State | Evidence |
+|---|---|---|
+| Policy engine (pure, no LLM) | working | 22 unit tests, `tests/test_policy.py` |
+| Tools + authorisation + idempotency | working | 24 tests, `tests/test_tools.py` |
+| Orchestrator (bounded state machine) | working | 19 tests, `tests/test_orchestrator.py` |
+| API + demo auth + ops console | working | 6 tests, `tests/test_api.py` |
+| Retrieval (BM25 + query expansion) | working | recall@4 = 1.00, MRR 0.89, n=14 |
+| Benchmark, 310 frozen cases | 310/310, 0 safety violations | `EVALUATION_RESULTS/benchmark-rules-baseline.{json,md}` |
+| SFT dataset | 3,156 train / 312 dev, no family leakage | `EVALUATION_RESULTS/dataset-validation.json` |
+| QLoRA fine-tune | **NOT RUN** (no GPU) | `training/`, `EXPERIMENT_LOG.md` |
+| Local 4-bit GGUF serving | **NOT RUN** (no weights yet) | `training/README.md` |
 
-## Why the hardware matters
+Test suite: `76 passed`. Lint: `ruff check` clean. Benchmark latency (rules baseline, CPU, SQLite):
+p50 14 ms, p95 23 ms, 310 cases in 30.2 s.
 
-This machine has **no NVIDIA GPU, 8 GB RAM, and ~15 GB free disk**. So:
+## Quickstart
 
-- Training runs on a **free-tier GPU notebook** (Kaggle T4×2 / Colab T4) with QLoRA — scripted and pinned so it is reproducible.
-- Serving is the **merged checkpoint quantised to GGUF Q4_K_M** (~2 GB) on CPU via `llama.cpp`.
-- The database is SQLite; Postgres stays a config swap.
-- This is still a legitimate "fine-tuned 3B" story, and the README must state exactly where each number was measured. Without these constraints written down, an agent will waste the session trying to train locally.
+```powershell
+pip install -e .
+$env:PYTHONPATH="src;."
+python -m support_ai.seed            # rebuild the synthetic company
+uvicorn support_ai.api:app --port 8000
+```
 
-## Setup in Antigravity
+- Customer chat: http://127.0.0.1:8000/
+- Ops console (approvals, escalations, audit): http://127.0.0.1:8000/ops
 
-1. Open this folder as the workspace (not your home directory).
-2. Settings → Terminal Command Auto Execution → **Always Proceed** (keep the deny list).
-3. Ensure network access for package/model downloads; approve it narrowly if sandboxed.
-4. Confirm `AGENTS.md` is picked up as project instructions.
-5. Paste `LAUNCH_PROMPT.md` as the task.
+Demo customers are seeded (Ada, Ben, Chen, Dana, Eli). Orders `ORD-1001` … `ORD-5001` cover the
+interesting cases: eligible refund, out of window, final sale, over the approval threshold, already
+refunded, shipped-but-not-delivered, expired warranty.
 
-Keep the repo committed at every green gate so a context reset costs minutes, not a rebuild.
+```powershell
+python -m eval.harness            # 310-case benchmark -> EVALUATION_RESULTS/
+python -m eval.retrieval_eval     # retrieval recall/MRR
+python -m eval.scorecard          # weighted scorecard from measured artefacts
+python -m data_gen.generate --variants 4   # regenerate SFT data
+python -m data_gen.validate       # schema/leakage/duplicate checks
+```
 
-## What "done" means
+## How a turn flows
 
-`SPEC.md` §19. The headline evidence: base-vs-tuned results on a frozen 300+ case benchmark, a policy engine that provably blocks ineligible refunds, measured CPU latency, and zero unauthorised state mutations in the adversarial suite — with `NOT RUN` written honestly wherever something could not be executed.
+```
+customer message
+      │
+      ▼
+ UNDERSTAND ── backend.understand()  intent + entities + confidence
+      │                               (low confidence -> escalate)
+      ▼
+   GATHER  ── read tools only, max 6 calls, re-planning up to 3 rounds
+      │        get_order · shipment · product · policy · warranty · eligibility
+      ▼
+     ACT   ── at most ONE mutating call per turn
+      │        intent→action allowlist, then policy re-checked *inside* the tool
+      ▼
+   VERIFY  ── re-read the database; if state is not confirmed, never claim success
+      │        (unconfirmed -> escalate, response rewritten)
+      ▼
+  RESPOND  ── text grounded in tool results only
+      │
+      ▼
+  AUDIT    ── correlation id, decision, reason code, tool trace
+```
+
+Three things make this safe rather than theatre:
+
+1. **The model never sees identity.** `customer_id` comes from the server session; every order-scoped
+   tool re-checks ownership. Asking for someone else's order returns the same message as a fake order id.
+2. **Refund amounts are computed, not requested.** `submit_refund_request` derives the figure from the
+   order line; an extra `amount_cents` argument is rejected as `UNEXPECTED_ARGS`.
+3. **Policy is re-evaluated at execution.** A prompt injection that convinces the planner still hits
+   `policy.evaluate_refund`, which knows the return window, final-sale flag and refund balance.
+
+## Benchmark (frozen, 310 cases)
+
+| Family | n | Pass |
+|---|---|---|
+| refund eligible / out of window / final sale | 35 / 25 / 20 | 100% |
+| refund over threshold (approval) / already refunded | 25 / 15 | 100% |
+| returns / replacements | 30 / 25 | 100% |
+| cancellation (placed + shipped) | 20 | 100% |
+| warranty (active + expired) | 20 | 100% |
+| order status · missing info · multi-item ambiguity | 30 · 15 · 10 | 100% |
+| **cross-account (15) · prompt injection (15)** | 30 | **100%, 0 mutations** |
+
+This is the **rules baseline**, i.e. the reference implementation that shares the policy engine with the
+evaluator. It proves the harness and the gates work. It is *not* a model score, and the scorecard leaves
+the model-quality rows blank on purpose.
+
+## Repository layout
+
+```
+src/support_ai/
+  policy.py         pure decision functions (ALLOW/DENY/REQUIRE_*/ESCALATE)
+  tools.py          read + mutating tools, ownership, idempotency, audit
+  orchestrator.py   bounded state machine, verification, escalation
+  llm.py            rules baseline + llama.cpp backend (same narrow interface)
+  retrieval.py      BM25 over versioned policy/help docs, query expansion
+  db.py             SQLAlchemy schema (SQLite; Postgres URL is a config swap)
+  seed.py           deterministic synthetic company
+  api.py, web.py    FastAPI + customer chat + ops console
+eval/               harness (310 cases), retrieval eval, scorecard
+data_gen/           SFT generator (policy-grounded teacher) + validator
+training/           QLoRA train, merge/quantise, Kaggle notebook (NOT RUN)
+tests/              76 tests: policy, tools, orchestrator, retrieval, API
+```
+
+## Design decisions that matter in review
+
+- Policy in code, model as proposer — see `DECISIONS.md` D7.
+- Stage-scoped output schemas instead of one mega-JSON envelope — D8.
+- SQLite + CPU GGUF because the hardware is a laptop, documented rather than hidden — D3/D4/D5.
+- Rules baseline first, so the benchmark exists before the model does — D11/D12.
+- Anything unmeasured is written as `NOT RUN`, never estimated — `AGENTS.md` §9.
+
+## What is deliberately missing
+
+- A trained adapter and GGUF (needs a free-tier T4; `training/README.md` has the exact commands).
+- Base-vs-tuned comparison, response-quality rubric, intent/entity F1 (all need the model or human labels).
+- Browser-level UI tests; the API beneath the UI is covered.
+- Postgres/Redis/containers — planned for the "deployment" story, not needed for correctness here.
+
+## Suggested resume line (only claims backed above)
+
+> Built a policy-gated customer-support agent (FastAPI, SQLite, BM25) where a fine-tuned 3B model
+> proposes actions and deterministic code enforces refund/return policy; 310-case benchmark with 0
+> unauthorised mutations, idempotent financial actions, verified-state responses, and a QLoRA training
+> pipeline scripted for free-tier GPUs.

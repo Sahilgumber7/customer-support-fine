@@ -49,3 +49,27 @@ One entry per material choice: what, why, and what was rejected. Add entries as 
 ## D12 — Honesty policy on unrun work
 **Why:** fabricated metrics are fatal in interviews; `NOT RUN — reason` is recoverable and still demonstrates engineering judgement.
 **Rejected:** placeholder numbers "to be replaced later" (they never get replaced and always leak into the README).
+
+## D13 — Bounded re-plan loop (≤3 rounds) instead of one gather + one act
+**Why:** real flows need three steps (load order → check eligibility → execute). A strict two-phase planner silently stopped before acting, which the tests caught. The loop keeps the same hard budget (≤6 tools, ≤1 mutation).
+**Rejected:** letting the model loop freely; hard-coding the three-step sequence per intent (would bypass the model's tool choice).
+
+## D14 — Idempotency lookup before policy evaluation
+**Why:** replaying the *same* refund request after the first one succeeded would otherwise be denied as `INVALID_AMOUNT` (balance already consumed), turning a safe retry into a misleading failure. The key is derived from customer + tool + order + sku + reason, so a genuinely different request still gets a fresh policy decision.
+**Rejected:** dedupe after policy; client-supplied keys only.
+
+## D15 — Rules baseline doubles as the SFT teacher and the evaluation reference
+**Why:** it guarantees every label is grounded in the same synthetic rows the agent will see, needs no external model or API, and is reproducible from a seed. The risk (the model inherits keyword-driven intent errors) is documented in `DATASET_CARD.md` and is exactly what the held-out-family split and the tuned-model run are meant to expose.
+**Rejected:** a larger API model as teacher (fabricates facts, couples the dataset to a paid service, and undermines the "3B is the product" claim); hand-writing 3k examples.
+
+## D16 — BM25Plus with a query-only thesaurus, no embeddings
+**Why:** six short policy documents. BM25Plus avoids negative-IDF scoring on common terms, and a small documented synonym map lifted recall@4 from 0.79 to 1.00 on the 14-query set. No embedding model download, no vector store, fully offline.
+**Rejected:** dense retrieval (another 100–400 MB of weights and a dependency, for a corpus this size); changing relevance labels to fit whatever the retriever returned.
+
+## D17 — Scorecard reports a measured subtotal, not an imputed /100
+**Why:** response quality, intent/entity F1, and generalisation cannot be measured without the tuned model and human labels. Reporting 70/70 measured plus 30 explicitly unmeasured is defensible; inventing the missing 30 would be the exact failure mode `AGENTS.md` §9 forbids.
+**Rejected:** scoring unmeasured dimensions at 0 (misleadingly harsh); scoring them at full marks "because the design is good" (fabrication).
+
+## D18 — Demo auth is an in-memory opaque token
+**Why:** the point is to demonstrate server-side identity binding and cross-account refusal, not to ship an identity provider. The token store is deliberately trivial and flagged as demo-only in `SECURITY.md`.
+**Rejected:** JWT with a checked-in secret (looks production-grade but invites copy-paste); no auth at all (would make the ownership tests meaningless).

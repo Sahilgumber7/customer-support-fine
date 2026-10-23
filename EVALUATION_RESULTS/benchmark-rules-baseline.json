@@ -1,0 +1,106 @@
+{
+  "n_cases": 310,
+  "passed": 310,
+  "task_success_rate": 1.0,
+  "by_family": {
+    "cancellation": {
+      "n": 20,
+      "passed": 20,
+      "rate": 1.0,
+      "failures": []
+    },
+    "cross_account": {
+      "n": 15,
+      "passed": 15,
+      "rate": 1.0,
+      "failures": []
+    },
+    "human_handoff": {
+      "n": 10,
+      "passed": 10,
+      "rate": 1.0,
+      "failures": []
+    },
+    "missing_information": {
+      "n": 15,
+      "passed": 15,
+      "rate": 1.0,
+      "failures": []
+    },
+    "multi_item_ambiguity": {
+      "n": 10,
+      "passed": 10,
+      "rate": 1.0,
+      "failures": []
+    },
+    "order_status": {
+      "n": 30,
+      "passed": 30,
+      "rate": 1.0,
+      "failures": []
+    },
+    "prompt_injection": {
+      "n": 15,
+      "passed": 15,
+      "rate": 1.0,
+      "failures": []
+    },
+    "refund_already_refunded": {
+      "n": 15,
+      "passed": 15,
+      "rate": 1.0,
+      "failures": []
+    },
+    "refund_eligible": {
+      "n": 35,
+      "passed": 35,
+      "rate": 1.0,
+      "failures": []
+    },
+    "refund_final_sale": {
+      "n": 20,
+      "passed": 20,
+      "rate": 1.0,
+      "failures": []
+    },
+    "refund_out_of_window": {
+      "n": 25,
+      "passed": 25,
+      "rate": 1.0,
+      "failures": []
+    },
+    "refund_over_threshold": {
+      "n": 25,
+      "passed": 25,
+      "rate": 1.0,
+      "failures": []
+    },
+    "replacement_damaged": {
+      "n": 25,
+      "passed": 25,
+      "rate": 1.0,
+      "failures": []
+    },
+    "return_eligible": {
+      "n": 30,
+      "passed": 30,
+      "rate": 1.0,
+      "failures": []
+    },
+    "warranty": {
+      "n": 20,
+      "passed": 20,
+      "rate": 1.0,
+      "failures": []
+    }
+  },
+  "latency_ms": {
+    "p50": 14,
+    "p95": 23,
+    "mean": 14.6
+  },
+  "safety_violations": 0,
+  "wall_clock_s": 30.16,
+  "backend": "rules-baseline",
+  "note": "Rules baseline is deterministic and LLM-free. It is the reference implementation, not evidence about the fine-tuned model; the tuned-model run requires a GPU and is recorded separately."
+}

@@ -1,0 +1,83 @@
+{
+  "subject": "rules-baseline (system-level reference implementation)",
+  "model_run": "NOT RUN \u2014 no GPU on the build machine; see MODEL_CARD.md",
+  "n_cases": 310,
+  "pass_rate": 1.0,
+  "safety_violations": 0,
+  "latency_ms": {
+    "p50": 14,
+    "p95": 23,
+    "mean": 14.6
+  },
+  "measured_points": 70.0,
+  "measured_max": 70,
+  "unmeasured_points": 30,
+  "rows": [
+    {
+      "dimension": "business_outcomes",
+      "weight": 20,
+      "status": "measured",
+      "score": 1.0,
+      "points": 20.0
+    },
+    {
+      "dimension": "tools",
+      "weight": 15,
+      "status": "measured",
+      "score": 1.0,
+      "points": 15.0
+    },
+    {
+      "dimension": "response_quality",
+      "weight": 15,
+      "status": "NOT MEASURED",
+      "score": null,
+      "points": null,
+      "reason": "requires the fine-tuned model run and/or human rubric"
+    },
+    {
+      "dimension": "intent_entities",
+      "weight": 10,
+      "status": "NOT MEASURED",
+      "score": null,
+      "points": null,
+      "reason": "requires the fine-tuned model run and/or human rubric"
+    },
+    {
+      "dimension": "retrieval",
+      "weight": 10,
+      "status": "measured",
+      "score": 1.0,
+      "points": 10.0
+    },
+    {
+      "dimension": "security",
+      "weight": 10,
+      "status": "measured",
+      "score": 1.0,
+      "points": 10.0
+    },
+    {
+      "dimension": "performance",
+      "weight": 10,
+      "status": "measured",
+      "score": 1.0,
+      "points": 10.0
+    },
+    {
+      "dimension": "generalisation",
+      "weight": 5,
+      "status": "NOT MEASURED",
+      "score": null,
+      "points": null,
+      "reason": "requires the fine-tuned model run and/or human rubric"
+    },
+    {
+      "dimension": "reproducibility",
+      "weight": 5,
+      "status": "measured",
+      "score": 1.0,
+      "points": 5.0
+    }
+  ]
+}

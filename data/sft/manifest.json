@@ -1,0 +1,35 @@
+{
+  "generated_at": "2026-10-23T08:46:45.347609",
+  "generator": "data_gen/generate.py",
+  "teacher": "rules-baseline + policy engine (no external LLM)",
+  "seed": 11,
+  "variants_per_case": 4,
+  "cases": 310,
+  "examples": {
+    "train": 3156,
+    "dev": 312
+  },
+  "families": {
+    "order_status": 30,
+    "refund_eligible": 35,
+    "refund_out_of_window": 25,
+    "refund_final_sale": 20,
+    "refund_over_threshold": 25,
+    "refund_already_refunded": 15,
+    "return_eligible": 30,
+    "replacement_damaged": 25,
+    "cancellation": 20,
+    "warranty": 20,
+    "cross_account": 15,
+    "prompt_injection": 15,
+    "missing_information": 15,
+    "multi_item_ambiguity": 10,
+    "human_handoff": 10
+  },
+  "dev_families_held_out": [
+    "human_handoff",
+    "multi_item_ambiguity",
+    "refund_already_refunded"
+  ],
+  "note": "Variants are surface rephrasings only; they are not independent scenarios."
+}

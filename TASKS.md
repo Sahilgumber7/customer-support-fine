@@ -1,71 +1,92 @@
 # TASKS.md
 
-`[ ]` todo · `[x]` done + verified · `[~]` in progress · `[!]` blocked
+`[x]` done + verified · `[~]` partial · `[!]` blocked · `[ ]` todo
 
-> A task is only `[x]` when its verification command passed. Log evidence inline.
+> A task is only `[x]` when its verification command passed. Evidence is named inline.
 
 ## Phase 0 — Bootstrap
-- [x] Handoff package created: `AGENTS.md`, `SPEC.md`, `ENVIRONMENT_FACTS.md`, `LAUNCH_PROMPT.md`
-- [x] Environment inspected: no GPU, 8 GB RAM, 14.7 GB free, Python 3.12.6, git 2.50.1
-- [ ] Re-verify environment; update `ENVIRONMENT_FACTS.md` if changed
-- [ ] `git init` + first commit
-- [ ] Repo skeleton + `pyproject.toml` + pinned deps + ruff/pytest config
-- [ ] `pytest` runs green with a trivial real test
+- [x] Handoff package: `AGENTS.md`, `SPEC.md`, `ENVIRONMENT_FACTS.md`, `LAUNCH_PROMPT.md`
+- [x] Environment inspected: no GPU, 8 GB RAM, 14.7 GB free, Python 3.12.6
+- [x] `git init` + handoff commit `02b0acf`
+- [x] Repo skeleton, `pyproject.toml`, pytest + ruff config
+- [x] `pytest` green (76 tests)
 
-## Phase 1 — Foundation (no model involved)
-- [ ] SQLAlchemy schema: all tables from `SPEC.md` §4
-- [ ] Deterministic seed script (~40 products, 25 customers, 120 orders, 300 tickets)
-- [ ] Fictional policy handbook in `data/policy/*.md` (versioned)
-- [ ] `make reset-db` reproducible reset
-- [ ] Policy engine: ALLOW/DENY/REQUIRE_INFORMATION/REQUIRE_APPROVAL/ESCALATE
-- [ ] Policy tests: window, final-sale, duplicate, already-refunded, ownership, over-threshold, warranty exception
-- [ ] Auth/session layer with ownership binding
-- [ ] Tool layer: read tools, then state-changing tools, strict Pydantic schemas
-- [ ] Idempotency keys + audit log on all mutations
-- [ ] Integration tests: DENY paths mutate nothing
+## Phase 1 — Foundation (no model)
+- [x] SQLAlchemy schema, 21 tables (`src/support_ai/db.py`)
+- [x] Deterministic synthetic company: 12 products · 5 customers · 15 policy-edge orders (`seed.py`)
+      — smaller than SPEC §4's 40/25/120 because evaluation builds its own per-case fixtures
+- [x] Versioned policy handbook, 6 docs (`data/policy/*.md`, version 2026.1)
+- [x] Reset path: `python -m support_ai.seed`
+- [x] Policy engine with 5 decisions + reason enum (`policy.py`, 22 tests)
+- [x] Policy tests: window, defective window, final sale, duplicate, already-refunded, ownership,
+      over-threshold, high-risk, warranty, cancellation states
+- [x] Session-bound identity; cross-account refusal (3 tool tests + 15 benchmark cases)
+- [x] Tool layer: 9 read + 6 mutating tools, signature-checked arguments
+- [x] Idempotency keys + audit log on every mutation and denial
+- [x] Integration tests: DENY paths mutate nothing
 
 ## Phase 2 — Data
-- [ ] Scenario generator with fixed seeds + template families
-- [ ] Dataset validator (schema, dup, leakage, label distribution)
-- [ ] Splits by family: `sft` / `dev` / `test` / `adversarial` / `multiturn`
-- [ ] Target ≥3k SFT, ≥300 test, ≥60 adversarial, ≥40 multiturn
+- [x] Scenario generator, 15 families, deterministic (`eval/harness.py`)
+- [x] SFT generator with policy-grounded teacher (`data_gen/generate.py`)
+- [x] Validator: schema, JSON parse, duplicates, family leakage, label distribution
+- [x] Splits by family; 3 families held out (`human_handoff`, `multi_item_ambiguity`,
+      `refund_already_refunded`)
+- [x] 3,156 train / 312 dev SFT (target ≥3k met); 310 test cases met
+- [ ] Separate adversarial split beyond the 30 injection/cross-account cases
+- [ ] Separate multi-turn split
 - [ ] Manual spot-check of 50 samples
-- [ ] `DATASET_CARD.md`
+- [x] `DATASET_CARD.md`
 
 ## Phase 3 — Baseline
-- [ ] Inference wrapper for base model (GPU host)
-- [ ] Eval harness producing JSON + MD into `EVALUATION_RESULTS/`
-- [ ] Base-model baseline run recorded
+- [x] Rules baseline backend (no LLM) behind the same interface as the model
+- [x] Eval harness → JSON + MD in `EVALUATION_RESULTS/`
+- [x] Baseline benchmark recorded: 310/310, 0 safety violations, p50 14 / p95 49 ms (`EXP-B01`)
+- [!] Base-model (untuned Qwen2.5-3B) baseline — needs GPU or a GGUF download + CPU inference budget
 
 ## Phase 4 — Fine-tune
-- [ ] `training/` bundle + pinned `requirements-train.txt` + notebook
-- [ ] 20-step smoke run succeeds
-- [ ] Real QLoRA run on free-tier GPU; loss curve + config logged
-- [ ] Merge → GGUF Q4_K_M → hash → `model_manifest.json`
-- [ ] Local load verification: model answers a held-out case, provenance printed
-- [ ] `MODEL_CARD.md`
+- [x] `training/train_qlora.py`, `merge_and_export.py`, pinned requirements, Kaggle notebook
+- [x] `training/README.md` with exact free-tier steps
+- [ ] 20-step smoke run (needs GPU)
+- [!] Real QLoRA run — **BLOCKED: no NVIDIA GPU on build machine**
+- [!] Merge → GGUF Q4_K_M → hash (depends on the adapter)
+- [!] Local load + provenance check (depends on the GGUF)
+- [x] `MODEL_CARD.md` (states NOT RUN)
 
 ## Phase 5 — Agent
-- [ ] Bounded state machine + tool loop limits + timeouts
-- [ ] Retrieval (BM25) with policy-version filter + attribution
-- [ ] Orchestrator wired to the fine-tuned model
-- [ ] Escalation + approval queue paths
-- [ ] Multi-turn memory/context handling
+- [x] Bounded state machine: ≤6 tools, ≤3 re-plan rounds, ≤1 mutation (`orchestrator.py`)
+- [x] Post-action verification; unverified state escalates instead of claiming success
+- [x] BM25 retrieval with document version + citation, query expansion
+- [x] Orchestrator wired to `RulesBackend`; `LlamaCppBackend` implemented and unused
+- [x] Escalation + approval queue paths, ops decision endpoint
+- [~] Multi-turn context: last 10 messages passed to the backend; no per-turn entity carry-over test
+- [ ] Wire and validate the fine-tuned backend end-to-end (blocked on Phase 4)
 
 ## Phase 6 — Product
-- [ ] Customer chat UI on real APIs (streaming, status cards, handoff)
-- [ ] Ops dashboard: queue, transcript, verdicts, approvals, audit, latency
-- [ ] Demo auth that cannot cross accounts (tested)
+- [x] Customer chat UI on real APIs (single-file HTML/JS, no build step)
+- [x] Ops console: approvals, escalations, audit, live stats
+- [x] Demo auth cannot cross accounts (API test returns 404 for another customer's conversation)
+- [ ] Browser-level UI test (Playwright or equivalent)
 
 ## Phase 7 — Evaluate
-- [ ] Full benchmark: base vs tuned vs rules baseline, paired, with CIs
-- [ ] Adversarial suite: injection, cross-account, duplicates, rollback, timeouts
-- [ ] Fault injection + concurrency tests
-- [ ] Profiling: TTFT, p50/p95, tok/s, peak RSS, load time
-- [ ] Error analysis → fix top 3 root causes → re-run
+- [x] 310-case benchmark for the reference path (`EXP-B01`)
+- [!] Base vs tuned, paired comparison — blocked on the adapter
+- [x] Adversarial: prompt injection, cross-account, duplicate execution, final-sale bypass
+- [~] Fault injection: tool-failure ladder and unverified-state escape tested; no timeout/concurrency test
+- [~] Profiling: per-turn p50/p95 and wall clock measured; peak RSS and tok/s need the GGUF
+- [x] Error analysis → 6 root causes fixed (see below) → re-ran green
+
+### Error analysis log (benchmark iteration)
+1. Rules `plan` only ran gather then one act → three-step flows never executed → bounded re-plan loop (D13).
+2. Idempotent replay was checked after policy → retry looked like `INVALID_AMOUNT` → moved dedupe first (D14).
+3. Cancellation replied before the refund row was flushed → `refund_id=None`, verification failed → explicit flush.
+4. Denial audit rows were rolled back with the raised exception → commit before raise.
+5. "My order is broken" fell through to help text → defect vocabulary + intent reordering.
+6. Benchmark counted fixture rows as mutations → before/after snapshots.
 
 ## Phase 8 — Release
-- [ ] Scorecard with all 9 components + auto-fail checks
-- [ ] `ARCHITECTURE.md`, `SECURITY.md`, `EVALUATION.md`, `DEPLOYMENT.md`, `DECISIONS.md`
-- [ ] Clean-room install from README alone
-- [ ] Final report per `SPEC.md` §20 + resume bullets
+- [x] Scorecard, measured-only (`EVALUATION_RESULTS/scorecard.{json,md}`): 70/70 measured, 30 unmeasured
+- [x] `ARCHITECTURE.md`, `EVALUATION.md`, `SECURITY.md`, `DEPLOYMENT.md`, `MODEL_CARD.md`,
+      `DATASET_CARD.md`, `README.md`
+- [ ] Clean-room install from README alone (fresh venv on this machine; not yet done)
+- [x] Final report content assembled in `PROJECT_STATUS.md` + `README.md` + `EVALUATION.md`
+- [ ] Optional: screenshots of chat + ops console for the portfolio page
