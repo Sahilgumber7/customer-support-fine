@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Models & large artifacts (never commit)
+models/
+artifacts/
+*.gguf
+*.safetensors
+*.bin
+checkpoints/
+wandb/
+
+# Data (keep policy + small fixtures; ignore generated bulk)
+data/sft/*.jsonl
+data/dev/*.jsonl
+data/test/*.jsonl
+data/adversarial/*.jsonl
+data/multiturn/*.jsonl
+data/generated/
+
+# Runtime
+*.db
+*.sqlite3
+logs/
+EVALUATION_RESULTS/*.png
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
