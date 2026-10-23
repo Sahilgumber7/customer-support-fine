@@ -34,7 +34,8 @@ Measured inputs: Windows 11, Python 3.12.6, 4 logical CPUs, 8.0 GB RAM, no NVIDI
 - `training/` — QLoRA training, merge + GGUF export, pinned requirements, Kaggle notebook
 - `tests/` — 81 tests across policy, tools, orchestrator, retrieval, API and a Chromium UI flow
 - Docs — `README`, `ARCHITECTURE`, `EVALUATION`, `SECURITY`, `DEPLOYMENT`, `MODEL_CARD`, `DATASET_CARD`,
-  plus the governance files (`AGENTS`, `SPEC`, `ENVIRONMENT_FACTS`, `DECISIONS`, `TASKS`, this file)
+  `FINAL_REPORT`, plus the governance files (`AGENTS`, `SPEC`, `ENVIRONMENT_FACTS`, `DECISIONS`, `TASKS`,
+  this file)
 
 ## Blockers
 

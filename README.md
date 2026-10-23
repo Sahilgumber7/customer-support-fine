@@ -9,15 +9,16 @@ a deterministic rules baseline; the fine-tune is scripted but not yet run (statu
 > Status honesty: the **system, policy engine, tools, UI, dataset and evaluation harness are built and
 > tested on this machine**. The **GPU fine-tune and 4-bit serving run are scripted but NOT RUN** — the
 > build machine has no NVIDIA GPU, 8 GB RAM and ~15 GB free disk (`ENVIRONMENT_FACTS.md`). No model-quality
-> numbers are claimed. See `MODEL_CARD.md` and `EVALUATION_RESULTS/scorecard.md`.
+> numbers are claimed. See `MODEL_CARD.md` and `EVALUATION_RESULTS/scorecard.md`, or the end-to-end
+> summary in `FINAL_REPORT.md`.
 
 ## Verified status
 
 | Area | State | Evidence |
 |---|---|---|
 | Policy engine (pure, no LLM) | working | 22 unit tests, `tests/test_policy.py` |
-| Tools + authorisation + idempotency | working | 24 tests, `tests/test_tools.py` |
-| Orchestrator (bounded state machine) | working | 19 tests, `tests/test_orchestrator.py` |
+| Tools + authorisation + idempotency | working | 25 tests, `tests/test_tools.py` |
+| Orchestrator (bounded state machine) | working | 20 tests, `tests/test_orchestrator.py` |
 | API + demo auth + ops console | working | 6 tests, `tests/test_api.py` |
 | Browser UI (Chromium) | working | 3 tests, `tests/test_ui.py` |
 | Retrieval (BM25 + query expansion) | working | recall@4 = 1.00, MRR 0.89, n=14 |
