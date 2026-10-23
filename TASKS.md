@@ -40,7 +40,7 @@
 ## Phase 3 — Baseline
 - [x] Rules baseline backend (no LLM) behind the same interface as the model
 - [x] Eval harness → JSON + MD in `EVALUATION_RESULTS/`
-- [x] Baseline benchmark recorded: 310/310, 0 safety violations, p50 14 / p95 49 ms (`EXP-B01`)
+- [x] Baseline benchmark recorded: 310/310, 0 safety violations, p50 16 / p95 25 ms (`EXP-B01`)
 - [!] Base-model (untuned Qwen2.5-3B) baseline — needs GPU or a GGUF download + CPU inference budget
 
 ## Phase 4 — Fine-tune
@@ -71,7 +71,8 @@
 - [x] 310-case benchmark for the reference path (`EXP-B01`)
 - [!] Base vs tuned, paired comparison — blocked on the adapter
 - [x] Adversarial: prompt injection, cross-account, duplicate execution, final-sale bypass
-- [~] Fault injection: tool-failure ladder and unverified-state escape tested; no timeout/concurrency test
+- [x] Fault injection: tool-failure ladder, unverified-state escape, backend timeout, and a
+      six-way concurrency race on the same refund (exactly one row)
 - [~] Profiling: per-turn p50/p95 and wall clock measured; peak RSS and tok/s need the GGUF
 - [x] Error analysis → 6 root causes fixed (see below) → re-ran green
 
@@ -87,6 +88,7 @@
 - [x] Scorecard, measured-only (`EVALUATION_RESULTS/scorecard.{json,md}`): 70/70 measured, 30 unmeasured
 - [x] `ARCHITECTURE.md`, `EVALUATION.md`, `SECURITY.md`, `DEPLOYMENT.md`, `MODEL_CARD.md`,
       `DATASET_CARD.md`, `README.md`
-- [ ] Clean-room install from README alone (fresh venv on this machine; not yet done)
+- [x] Clean-room install from README alone: fresh venv, `pip install -e ".[dev]"`, `pytest` → 78 passed,
+      `eval.harness` → 310/310 (2026-10-23)
 - [x] Final report content assembled in `PROJECT_STATUS.md` + `README.md` + `EVALUATION.md`
 - [ ] Optional: screenshots of chat + ops console for the portfolio page

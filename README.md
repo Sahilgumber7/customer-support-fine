@@ -25,8 +25,8 @@ a deterministic rules baseline; the fine-tune is scripted but not yet run (statu
 | QLoRA fine-tune | **NOT RUN** (no GPU) | `training/`, `EXPERIMENT_LOG.md` |
 | Local 4-bit GGUF serving | **NOT RUN** (no weights yet) | `training/README.md` |
 
-Test suite: `76 passed`. Lint: `ruff check` clean. Benchmark latency (rules baseline, CPU, SQLite):
-p50 14 ms, p95 23 ms, 310 cases in 30.2 s.
+Test suite: `78 passed`. Lint: `ruff check` clean. Benchmark latency (rules baseline, CPU, SQLite):
+p50 16 ms, p95 25 ms (p50 14-16 ms, p95 23-49 ms across identical runs), 310 cases in 27 s.
 
 ## Quickstart
 
@@ -116,7 +116,7 @@ src/support_ai/
 eval/               harness (310 cases), retrieval eval, scorecard
 data_gen/           SFT generator (policy-grounded teacher) + validator
 training/           QLoRA train, merge/quantise, Kaggle notebook (NOT RUN)
-tests/              76 tests: policy, tools, orchestrator, retrieval, API
+tests/              78 tests: policy, tools, orchestrator, retrieval, API
 ```
 
 ## Design decisions that matter in review

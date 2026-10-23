@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from datetime import datetime
 
 from sqlalchemy import select
@@ -48,6 +50,28 @@ ACTION_FOR_INTENT = {
     "replacement_request": "create_replacement_request",
     "cancellation_request": "request_cancellation",
 }
+
+
+class BackendTimeout(RuntimeError):
+    """The backend did not answer within the configured budget."""
+
+
+def _bounded(fn, *args):
+    """Run one backend call under a wall-clock budget.
+
+    The abandoned worker may keep running until it returns; this bounds what the
+    customer waits for, not what the process consumes. Documented in DECISIONS D19.
+    """
+    pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="backend")
+    try:
+        future = pool.submit(fn, *args)
+        return future.result(timeout=settings.backend_timeout_s)
+    except FutureTimeout as exc:
+        raise BackendTimeout(
+            f"backend call exceeded {settings.backend_timeout_s:g}s"
+        ) from exc
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
 
 
 def start_conversation(
@@ -98,7 +122,10 @@ class Orchestrator:
         self.s.add(Message(conversation_id=self.conversation_id, role="user", content=message))
         self.s.commit()
 
-        u = self.backend.understand(message, history)
+        try:
+            u = _bounded(self.backend.understand, message, history)
+        except BackendTimeout:
+            return self._timeout_turn(started, trace, "understand")
         trace.append(TraceStep(stage="understand", detail=u.intent, payload=u.model_dump()))
 
         if u.needs_clarification:
@@ -131,7 +158,10 @@ class Orchestrator:
         for round_no in range(3):
             if executed_action or budget <= 0 or failures >= 2:
                 break
-            plan = self.backend.plan(u, facts, message)
+            try:
+                plan = _bounded(self.backend.plan, u, facts, message)
+            except BackendTimeout:
+                return self._timeout_turn(started, trace, "plan")
             trace.append(
                 TraceStep(
                     stage="plan",
@@ -246,7 +276,18 @@ class Orchestrator:
                 "data": esc.data,
             }
 
-        reply = self.backend.respond(u, facts, action_payload)
+        try:
+            reply = _bounded(self.backend.respond, u, facts, action_payload)
+        except BackendTimeout:
+            trace.append(TraceStep(stage="respond", detail="timeout"))
+            reply = FinalResponse(
+                customer_message=(
+                    "I'm sorry — I couldn't finish checking that in time, so I've passed this "
+                    "to a colleague who can confirm the details."
+                ),
+                escalate=True,
+                escalate_reason="backend_timeout",
+            )
 
         if action_reason == "UNVERIFIED_STATE" and not reply.escalate:
             esc = execute_tool(
@@ -286,6 +327,38 @@ class Orchestrator:
         return self._finish(reply, u, action_payload, results, trace, started, decision)
 
     # -- internals ---------------------------------------------------------
+
+    def _timeout_turn(self, started: float, trace: list[TraceStep], stage: str) -> TurnResult:
+        """A backend that misses its budget escalates; it never gets to claim success."""
+        trace.append(TraceStep(stage=stage, detail="timeout"))
+        esc = execute_tool(
+            self.ctx,
+            ToolCall(
+                name="escalate_to_human",
+                arguments={
+                    "reason": "backend_timeout",
+                    "summary": f"Backend did not answer during {stage}.",
+                },
+            ),
+        )
+        reply = FinalResponse(
+            customer_message=(
+                "I'm sorry — I couldn't finish checking that in time, so I've passed this "
+                "to a colleague who can confirm the details."
+            ),
+            escalate=True,
+            escalate_reason="backend_timeout",
+        )
+        u = Understanding(intent="other", confidence=0.0)
+        return self._finish(
+            reply,
+            u,
+            {"tool": "escalate_to_human", "ok": esc.ok, "data": esc.data},
+            [esc],
+            trace,
+            started,
+            "ESCALATE",
+        )
 
     def _history(self) -> list[dict[str, str]]:
         rows = list(

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from . import policy
@@ -191,6 +192,39 @@ def _dedupe(ctx: ToolContext, key: str) -> dict | None:
 
 def _remember(ctx: ToolContext, key: str, tool: str, result: dict) -> None:
     ctx.session.add(IdempotencyKey(key=key, tool=tool, result_json=json.dumps(result)))
+
+
+def _replay_after_conflict(ctx: ToolContext, key: str) -> dict | None:
+    """A concurrent twin may have won the unique-key race. Roll back and read its result.
+
+    Returns the stored result (marked deduplicated) when it exists, otherwise ``None``.
+    """
+    ctx.session.rollback()
+    return _dedupe(ctx, key)
+
+
+def _flush_or_replay(ctx: ToolContext, key: str) -> dict | None:
+    """Flush the pending mutation, mapping a unique-key collision to an idempotent replay."""
+    try:
+        ctx.session.flush()
+    except IntegrityError:
+        cached = _replay_after_conflict(ctx, key)
+        if cached is not None:
+            return cached
+        raise
+    return None
+
+
+def _commit_or_replay(ctx: ToolContext, key: str) -> dict | None:
+    """Commit, mapping a unique-key collision at commit time to an idempotent replay."""
+    try:
+        ctx.session.commit()
+    except IntegrityError:
+        cached = _replay_after_conflict(ctx, key)
+        if cached is not None:
+            return cached
+        raise
+    return None
 
 
 # --- read tools -------------------------------------------------------------
@@ -437,7 +471,8 @@ def create_replacement_request(
         idempotency_key=key,
     )
     ctx.session.add(req)
-    ctx.session.flush()
+    if (cached := _flush_or_replay(ctx, key)) is not None:
+        return cached
     result = {
         "replacement_request_id": req.id,
         "order_id": order.id,
@@ -447,7 +482,8 @@ def create_replacement_request(
     }
     _remember(ctx, key, "create_replacement_request", result)
     _audit(ctx, "create_replacement_request", f"{order.id}/{sku}", "ALLOW", "OK", result)
-    ctx.session.commit()
+    if (cached := _commit_or_replay(ctx, key)) is not None:
+        return cached
     return result
 
 
@@ -469,7 +505,8 @@ def request_cancellation(
         return cached
 
     order.status = "cancelled"
-    ctx.session.flush()
+    if (cached := _flush_or_replay(ctx, key)) is not None:
+        return cached
     refund = Refund(
         order_id=order.id,
         amount_cents=order.total_cents,
@@ -478,7 +515,8 @@ def request_cancellation(
         idempotency_key=f"{key}:refund",
     )
     ctx.session.add(refund)
-    ctx.session.flush()
+    if (cached := _flush_or_replay(ctx, key)) is not None:
+        return cached
     order.payment_status = "refunded"
     result = {
         "order_id": order.id,
@@ -489,7 +527,8 @@ def request_cancellation(
     }
     _remember(ctx, key, "request_cancellation", result)
     _audit(ctx, "request_cancellation", order.id, "ALLOW", "OK", result)
-    ctx.session.commit()
+    if (cached := _commit_or_replay(ctx, key)) is not None:
+        return cached
     return result
 
 
@@ -569,7 +608,8 @@ def submit_refund_request(
             idempotency_key=key,
         )
         ctx.session.add(refund)
-        ctx.session.flush()
+        if (cached := _flush_or_replay(ctx, key)) is not None:
+            return cached
         approval = Approval(
             conversation_id=ctx.conversation_id,
             refund_id=refund.id,
@@ -600,7 +640,8 @@ def submit_refund_request(
         _audit(
             ctx, "submit_refund_request", order.id, "REQUIRE_APPROVAL", verdict.reason.value, result
         )
-        ctx.session.commit()
+        if (cached := _commit_or_replay(ctx, key)) is not None:
+            return cached
         return result
 
     key = _idem_key(
@@ -618,7 +659,8 @@ def submit_refund_request(
         idempotency_key=key,
     )
     ctx.session.add(refund)
-    ctx.session.flush()
+    if (cached := _flush_or_replay(ctx, key)) is not None:
+        return cached
     if refunded + amount >= order.total_cents:
         order.status = "refunded"
         order.payment_status = "refunded"
@@ -632,7 +674,8 @@ def submit_refund_request(
     }
     _remember(ctx, key, "submit_refund_request", result)
     _audit(ctx, "submit_refund_request", order.id, "ALLOW", "OK", result)
-    ctx.session.commit()
+    if (cached := _commit_or_replay(ctx, key)) is not None:
+        return cached
     return result
 
 

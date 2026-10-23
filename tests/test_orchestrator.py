@@ -1,7 +1,10 @@
 """End-to-end conversation tests through the real orchestrator + tools + policy engine."""
 
+import time
+
 from sqlalchemy import func, select
 
+from support_ai.config import settings
 from support_ai.db import Approval, Escalation, Order, Refund, ReplacementRequest, ReturnRequest
 from support_ai.llm import RulesBackend
 from support_ai.orchestrator import Orchestrator
@@ -203,4 +206,26 @@ def test_conversation_history_is_persisted(session, retriever, conversation):
 
     rows = list(session.scalars(select(Message).where(Message.conversation_id == conversation.id)))
     assert len(rows) >= 4
+
+
+def test_backend_timeout_escalates_without_claiming_success(
+    session, retriever, conversation, monkeypatch
+):
+    class SlowBackend(RulesBackend):
+        model_id = "slow-test"
+
+        def understand(self, message, history):
+            time.sleep(0.2)
+            return super().understand(message, history)
+
+    monkeypatch.setattr(settings, "backend_timeout_s", 0.05)
+    result = Orchestrator(session, SlowBackend(), retriever, 1, conversation.id).handle(
+        "Where is my order ORD-1001?"
+    )
+
+    assert result.escalated is True
+    assert result.action_taken in (None, "escalate_to_human")
+    assert "couldn't finish" in result.message.lower()
+    esc = session.scalar(select(Escalation).where(Escalation.conversation_id == conversation.id))
+    assert esc is not None and esc.reason == "backend_timeout"
 

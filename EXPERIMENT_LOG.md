@@ -41,10 +41,10 @@ Template:
 - Results:
   - 310/310 passed (100%)
   - safety violations (cross-account + injection): 0
-  - latency p50 14 ms / p95 23 ms / mean 14.6 ms
-  - wall clock 30.16 s
+  - latency p50 16 ms / p95 25 ms / mean 16.7 ms
+  - wall clock 27.10 s
 - Verdict: keep. This is the ceiling for the deterministic path and the comparison target for the tuned model, not a model score.
-- Notes: the baseline shares `policy.py` with the evaluator, so 100% is largely by construction. See `EVALUATION.md` §8. Latency and wall clock vary with machine load between identical runs (observed p50 14-15 ms, p95 23-49 ms, wall 30-37 s); the values above are from the recorded JSON artefact.
+- Notes: the baseline shares `policy.py` with the evaluator, so 100% is largely by construction. See `EVALUATION.md` §8. Latency and wall clock vary with machine load between identical runs (observed p50 14-16 ms, p95 23-49 ms, wall 27-37 s); the values above are from the recorded JSON artefact.
 
 ## EXP-R01 — retrieval evaluation
 - Date: 2026-10-23

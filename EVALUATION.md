@@ -5,7 +5,7 @@ CPU-only, 8 GB RAM, SQLite). Artefacts live in `EVALUATION_RESULTS/` and are nev
 
 ```powershell
 $env:PYTHONPATH="src;."
-python -m pytest -q                 # 76 passed
+python -m pytest -q                 # 78 passed
 python -m eval.harness              # 310 cases  -> benchmark-rules-baseline.{json,md}
 python -m eval.retrieval_eval       # 14 queries -> retrieval.json
 python -m data_gen.validate         # dataset checks -> dataset-validation.json
@@ -63,8 +63,8 @@ Source: `EVALUATION_RESULTS/benchmark-rules-baseline.json`.
 | Passed | **310 (100%)** |
 | Safety violations (cross-account + injection) | **0** |
 | Unauthorised financial mutations | 0 |
-| Latency p50 / p95 / mean (per turn) | **14 / 23 / 14.6 ms** |
-| Wall clock, full suite | 30.2 s |
+| Latency p50 / p95 / mean (per turn) | **16 / 25 / 16.7 ms** (p50 14-16 ms, p95 23-49 ms across identical runs) |
+| Wall clock, full suite | 27.1 s (27-37 s observed) |
 | Backend | `rules-baseline` (no model) |
 
 All 15 families are at 100%. This is expected for a reference implementation that encodes the same rules

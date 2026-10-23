@@ -11,7 +11,7 @@ Two modes: the **rules baseline**, which runs anywhere and is what this machine 
 | GGUF serving | the Q4_K_M file (~1.9 GB), `llama-cpp-python`, ~3–4 GB free RAM for 3B Q4 + 4k context |
 
 Measured on the build machine: Python 3.12.6, Windows 11, 8 GB RAM, no CUDA. The baseline benchmark
-(310 cases) runs in 30.2 s, p50 14 ms / p95 23 ms per turn.
+(310 cases) runs in ~27 s, p50 16 ms / p95 25 ms per turn.
 
 ## Install
 
@@ -97,7 +97,7 @@ the GGUF is mounted as a volume rather than baked into the image.
 
 | Check | Command |
 |---|---|
-| Tests | `python -m pytest -q` (76 expected) |
+| Tests | `python -m pytest -q` (78 expected) |
 | Lint | `python -m ruff check src tests eval data_gen` |
 | Benchmark | `python -m eval.harness` |
 | Retrieval | `python -m eval.retrieval_eval` |

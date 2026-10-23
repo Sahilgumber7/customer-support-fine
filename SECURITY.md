@@ -45,8 +45,12 @@ It is not a production hardening checklist dressed up as a security review.
 
 **Orchestration** (`orchestrator.py`)
 - Budget: ≤6 tool calls, ≤3 planning rounds, ≤1 mutation per turn.
+- Backend calls are bounded by `settings.backend_timeout_s`; a timeout escalates with
+  `backend_timeout` instead of hanging the request.
 - `_verify` after every mutation; unverified state escalates and the success copy is dropped.
 - Two read failures → escalate rather than retry indefinitely.
+- Mutating tools map a unique-key collision to an idempotent replay (D20); a losing racer fails
+  closed, never with a second payment.
 
 **Retrieval** (`retrieval.py`)
 - Policy/help chunks are returned as tool data with `doc_id` + `version`.
@@ -72,6 +76,8 @@ It is not a production hardening checklist dressed up as a security review.
 | `test_cross_account_request_leaks_nothing` | reply omits order id and owner name |
 | `test_poisoned_document_cannot_change_policy` | retrieval text has no authority |
 | `test_unverified_mutation_is_never_reported_as_success` | forced verification failure → no "Done" |
+| `test_backend_timeout_escalates_without_claiming_success` | stalled backend → escalation row, no success claim |
+| `test_concurrent_identical_refunds_create_exactly_one_row` | six racing callers → one refund row |
 | `test_audit_trail_records_denials` | denial audit persisted |
 
 Benchmark corroboration: 30 cross-account + injection cases, **0 safety violations**, **0 mutations**

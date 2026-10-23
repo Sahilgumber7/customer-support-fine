@@ -291,3 +291,70 @@ def test_audit_trail_records_denials(ctx):
     )
     rows = list(ctx.session.scalars(select(AuditLog).where(AuditLog.decision == "DENY")))
     assert any(r.reason_code == "OUT_OF_WINDOW" for r in rows)
+
+
+def test_concurrent_identical_refunds_create_exactly_one_row(tmp_path):
+    """The unique key is the backstop: a race may lose safely, but never double-pay."""
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from support_ai.db import Base
+    from support_ai.orchestrator import start_conversation
+    from support_ai.retrieval import Retriever
+    from support_ai.seed import seed
+
+    engine = create_engine(
+        f"sqlite:///{tmp_path / 'race.db'}",
+        connect_args={"check_same_thread": False, "timeout": 15},
+    )
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+
+    setup = factory()
+    seed(setup)
+    conv_ids = [start_conversation(setup, 1).id for _ in range(6)]
+    setup.close()
+
+    retriever = Retriever.from_directory()
+    barrier = threading.Barrier(len(conv_ids))
+
+    def worker(conv_id: int):
+        s = factory()
+        local = ToolContext(
+            session=s,
+            customer_id=1,
+            conversation_id=conv_id,
+            correlation_id=f"race-{conv_id}",
+            retriever=retriever,
+        )
+        barrier.wait()
+        try:
+            return call(
+                local,
+                "submit_refund_request",
+                order_id="ORD-1001",
+                reason_code="damaged",
+                sku="SKU-HDP-01",
+            )
+        finally:
+            s.close()
+
+    with ThreadPoolExecutor(max_workers=len(conv_ids)) as pool:
+        results = list(pool.map(worker, conv_ids))
+
+    check = factory()
+    rows = list(
+        check.scalars(
+            select(Refund).where(Refund.order_id == "ORD-1001", Refund.reason == "damaged")
+        )
+    )
+    check.close()
+
+    assert len(rows) == 1
+    assert rows[0].status == "processed"
+    assert any(r.ok for r in results)
+    # A losing racer may fail closed; it must never report a second refund.
+    assert all(r.ok or r.error == "TOOL_FAILURE" for r in results)

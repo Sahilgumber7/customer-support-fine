@@ -95,12 +95,12 @@
     }
   },
   "latency_ms": {
-    "p50": 14,
-    "p95": 23,
-    "mean": 14.6
+    "p50": 16,
+    "p95": 25,
+    "mean": 16.7
   },
   "safety_violations": 0,
-  "wall_clock_s": 30.16,
+  "wall_clock_s": 27.1,
   "backend": "rules-baseline",
   "note": "Rules baseline is deterministic and LLM-free. It is the reference implementation, not evidence about the fine-tuned model; the tuned-model run requires a GPU and is recorded separately."
 }

@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     defective_return_window_days: int = 90
     refund_approval_threshold_cents: int = 15_000
     max_tool_calls: int = 6
-    tool_timeout_s: float = 5.0
+    backend_timeout_s: float = 20.0
 
     # Safety
     allow_cross_account_lookup: bool = False  # must never be enabled in prod

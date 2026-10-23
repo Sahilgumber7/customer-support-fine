@@ -12,9 +12,9 @@ exist and pass their gates on this machine. The fine-tune and 4-bit serving runs
 
 | Area | Evidence |
 |---|---|
-| Test suite | `python -m pytest -q` → **76 passed** |
+| Test suite | `python -m pytest -q` → **78 passed** |
 | Lint | `python -m ruff check src tests eval data_gen` → clean |
-| Benchmark, 310 cases | 310/310, 0 safety violations, p50 14 ms / p95 23 ms, 30.2 s — `EVALUATION_RESULTS/benchmark-rules-baseline.json` |
+| Benchmark, 310 cases | 310/310, 0 safety violations, p50 16 ms / p95 25 ms, 27.1 s — `EVALUATION_RESULTS/benchmark-rules-baseline.json` |
 | Retrieval | recall@4 = 1.00, MRR 0.8929 (n=14) — `EVALUATION_RESULTS/retrieval.json` |
 | Dataset | 3,156 train / 312 dev, 0 schema errors, 0 dupes, no family leakage — `EVALUATION_RESULTS/dataset-validation.json` |
 | Scorecard | 70.0 / 70 measured; 30 points explicitly unmeasured — `EVALUATION_RESULTS/scorecard.md` |
@@ -30,7 +30,7 @@ Measured inputs: Windows 11, Python 3.12.6, 4 logical CPUs, 8.0 GB RAM, no NVIDI
 - `eval/` — 310-case harness, retrieval eval, scorecard builder
 - `data_gen/` — SFT generator + validator; `data/policy/` — 6 versioned policy/help documents
 - `training/` — QLoRA training, merge + GGUF export, pinned requirements, Kaggle notebook
-- `tests/` — 76 tests across policy, tools, orchestrator, retrieval, API
+- `tests/` — 78 tests across policy, tools, orchestrator, retrieval, API
 - Docs — `README`, `ARCHITECTURE`, `EVALUATION`, `SECURITY`, `DEPLOYMENT`, `MODEL_CARD`, `DATASET_CARD`,
   plus the governance files (`AGENTS`, `SPEC`, `ENVIRONMENT_FACTS`, `DECISIONS`, `TASKS`, this file)
 

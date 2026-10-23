@@ -73,3 +73,13 @@ One entry per material choice: what, why, and what was rejected. Add entries as 
 ## D18 — Demo auth is an in-memory opaque token
 **Why:** the point is to demonstrate server-side identity binding and cross-account refusal, not to ship an identity provider. The token store is deliberately trivial and flagged as demo-only in `SECURITY.md`.
 **Rejected:** JWT with a checked-in secret (looks production-grade but invites copy-paste); no auth at all (would make the ownership tests meaningless).
+
+## D19 — Backend calls run under a wall-clock budget, abandoning the call on timeout
+**Why:** a 3B model on CPU can stall; without a bound the HTTP request hangs and the customer gets nothing. `settings.backend_timeout_s` (default 20 s) wraps `understand`/`plan`/`respond`; a miss escalates with `backend_timeout` and creates a real escalation row, never a fabricated reply.
+**Rejected:** relying on llama.cpp internals (no per-call deadline); unbounded retries (turns a stall into an outage).
+**Limitation:** the abandoned worker thread may keep running until the native call returns. This bounds customer wait time, not process CPU. A production deployment would isolate inference in its own process so it can be killed.
+
+## D20 — Unique-key collision on a mutating tool is treated as a replay, not an error
+**Why:** two identical requests can pass the pre-check at the same moment. The database unique constraint is the authority; on `IntegrityError` the tool rolls back and returns the winner's stored result. The concurrency test asserts one refund row across six racing callers. A loser that cannot find a stored result fails closed with `TOOL_FAILURE`.
+**Rejected:** application-level locks (single-process only, and hide the real guarantee); dedupe only before execution (a race window remains).
+**Limitation:** SQLite may return `database is locked` under heavy contention before the unique constraint fires; that also fails closed and is surfaced as a tool failure rather than a second payment.
