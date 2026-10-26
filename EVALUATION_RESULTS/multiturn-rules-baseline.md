@@ -1,6 +1,6 @@
 # Multi-turn conversation evaluation — rules baseline
 
-Generated: 2026-10-23T11:32:37+00:00
+Generated: 2026-10-26T12:27:46+00:00
 
 > **Reference backend only.** This measures the deterministic baseline, not the fine-tuned model (NOT RUN).
 

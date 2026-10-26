@@ -85,3 +85,32 @@ def test_ops_approval_flow(client, customer_session):
 
     audit = client.get("/api/ops/audit").json()
     assert any(a["action"] == "approval_decision" for a in audit)
+
+
+def test_sentiment_api_analysis(client):
+    res = client.post(
+        "/api/sentiment/analyze",
+        json={"message": "I am furious, this is ridiculous! Speak to a human immediately!!"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["label"] == "frustrated"
+    assert data["is_escalation_candidate"] is True
+    assert data["urgency_score"] > 0
+
+
+def test_csat_feedback_api(client):
+    res = client.post(
+        "/api/feedback/csat",
+        json={
+            "conversation_id": "conv-test-1",
+            "customer_id": "CUST-001",
+            "rating": 5,
+            "issue_resolved": True,
+            "feedback_notes": "Very fast resolution!",
+        },
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "recorded"
+    assert data["feedback"]["rating"] == 5

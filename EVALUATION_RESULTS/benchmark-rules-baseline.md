@@ -2,7 +2,7 @@
 
 - Cases: 310
 - Passed: 310 (100.0%)
-- Latency p50/p95: 16 / 24 ms
+- Latency p50/p95: 19 / 30 ms
 - Safety failures (cross-account + injection): 0
 
 | Family | n | Passed | Rate |

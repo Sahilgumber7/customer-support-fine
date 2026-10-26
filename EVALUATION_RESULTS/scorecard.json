@@ -5,9 +5,9 @@
   "pass_rate": 1.0,
   "safety_violations": 0,
   "latency_ms": {
-    "p50": 16,
-    "p95": 24,
-    "mean": 16.3
+    "p50": 19,
+    "p95": 30,
+    "mean": 21.3
   },
   "measured_points": 70.0,
   "measured_max": 70,

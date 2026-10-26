@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import HTMLResponse
@@ -28,9 +29,21 @@ from .llm import get_backend
 from .orchestrator import Orchestrator, start_conversation
 from .retrieval import Retriever
 from .seed import reset_and_seed
+from .sentiment import CSATFeedback, analyze_sentiment
 from .web import CHAT_HTML, OPS_HTML
 
-app = FastAPI(title="Northwind Support AI", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    with next(get_session()) as s:
+        count = s.scalar(select(func.count()).select_from(Customer)) or 0
+        if count == 0:
+            reset_and_seed()
+    yield
+
+
+app = FastAPI(title="Northwind Support AI", version="0.1.0", lifespan=lifespan)
 _retriever: Retriever | None = None
 _backend = None
 _sessions: dict[str, int] = {}
@@ -48,15 +61,6 @@ def backend():
     if _backend is None:
         _backend = get_backend()
     return _backend
-
-
-@app.on_event("startup")
-def startup() -> None:
-    init_db()
-    with next(get_session()) as s:
-        count = s.scalar(select(func.count()).select_from(Customer)) or 0
-        if count == 0:
-            reset_and_seed()
 
 
 # --- schemas ----------------------------------------------------------------
@@ -202,7 +206,7 @@ def decide_approval(approval_id: int, payload: ApprovalIn, _: None = Depends(_re
             raise HTTPException(status_code=409, detail="Linked refund missing.")
 
         approval.status = "approved" if payload.decision == "approve" else "denied"
-        approval.decided_at = datetime.utcnow()
+        approval.decided_at = datetime.now(UTC)
         if payload.decision == "approve":
             refund.status = "processed"
             order = s.get(Order, refund.order_id)
@@ -322,6 +326,23 @@ def readyz() -> dict:
     if not ok:
         raise HTTPException(status_code=503, detail="Database not seeded.")
     return {"status": "ready"}
+
+
+@app.post("/api/sentiment/analyze")
+def analyze_customer_sentiment(payload: MessageIn) -> dict:
+    verdict = analyze_sentiment(payload.message)
+    return {
+        "label": verdict.label,
+        "sentiment_score": verdict.sentiment_score,
+        "urgency_score": verdict.urgency_score,
+        "is_escalation_candidate": verdict.is_escalation_candidate,
+        "triggers": verdict.triggers,
+    }
+
+
+@app.post("/api/feedback/csat")
+def record_csat_feedback(feedback: CSATFeedback) -> dict:
+    return {"status": "recorded", "feedback": feedback.model_dump()}
 
 
 # --- pages ------------------------------------------------------------------

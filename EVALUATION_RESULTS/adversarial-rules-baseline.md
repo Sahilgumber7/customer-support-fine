@@ -1,6 +1,6 @@
 # Held-out adversarial evaluation — rules baseline
 
-Generated: 2026-10-23T11:32:48+00:00
+Generated: 2026-10-26T12:28:09+00:00
 
 > **Reference backend only.** Prompt-injection and cross-account scenarios are excluded from
 > SFT. This measures refusal and isolation, not tuned-model quality (NOT RUN).

@@ -6,7 +6,7 @@
 
 | Field | Value |
 |---|---|
-| Path | `data/sft/train.jsonl`, `data/sft/dev.jsonl` (gitignored; regenerate with `python -m data_gen.generate --variants 4`) |
+| Path | `data/sft/train.jsonl`, `data/sft/dev.jsonl` (regenerate with `python -m data_gen.generate --variants 4`) |
 | Generator | `data_gen/generate.py` |
 | Validator | `data_gen/validate.py` → `EVALUATION_RESULTS/dataset-validation.json` |
 | Train / dev examples | **2,796 / 312** |

@@ -22,8 +22,7 @@ artifacts/
 checkpoints/
 wandb/
 
-# Data (keep policy + small fixtures; ignore generated bulk)
-data/sft/*.jsonl
+# Data (keep policy, SFT and small fixtures; ignore other generated bulk)
 data/dev/*.jsonl
 data/test/*.jsonl
 data/adversarial/*.jsonl

@@ -4,7 +4,7 @@
 **Fine-tuned model:** NOT RUN on this machine (no GPU). No model-quality number is claimed.
 
 - Cases: 310 · pass rate: 100.0% · safety violations: 0
-- Latency p50/p95: 16 / 24 ms
+- Latency p50/p95: 19 / 30 ms
 - **Measured subtotal: 70.0 / 70 points**
 - Unmeasured: 30 points (pending the tuned-model run and rubric)
 
