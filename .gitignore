@@ -1,4 +1,4 @@
-# Python
+# ─── Python ──────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 .venv/
@@ -8,12 +8,12 @@ venv/
 .mypy_cache/
 *.egg-info/
 
-# Env / secrets
+# ─── Secrets / Env ───────────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
 
-# Models & large artifacts (never commit)
+# ─── Model weights & large artifacts (never commit) ──────────────────────────
 models/
 artifacts/
 *.gguf
@@ -22,20 +22,33 @@ artifacts/
 checkpoints/
 wandb/
 
-# Data (keep policy, SFT and small fixtures; ignore other generated bulk)
+# ─── Database (runtime state) ────────────────────────────────────────────────
+*.db
+*.sqlite3
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+logs/
+EVALUATION_RESULTS/*.png
+
+# ─── Data: keep policy docs & rubric spec; exclude generated bulk ─────────────
 data/dev/*.jsonl
 data/test/*.jsonl
 data/adversarial/*.jsonl
 data/multiturn/*.jsonl
 data/generated/
 
-# Runtime
-*.db
-*.sqlite3
-logs/
-EVALUATION_RESULTS/*.png
+# ─── Agent / internal workflow docs (not needed on public repo) ───────────────
+AGENTS.md
+SPEC.md
+TASKS.md
+DECISIONS.md
+EXPERIMENT_LOG.md
+LAUNCH_PROMPT.md
+ENVIRONMENT_FACTS.md
+PROJECT_STATUS.md
+DATASET_RESEARCH.md
 
-# OS / editors
+# ─── OS / editor artifacts ───────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 .idea/
