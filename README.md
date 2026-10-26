@@ -1,10 +1,10 @@
-﻿<div align="center">
+<div align="center">
 
-# ðŸ›¡ï¸ Customer Support Fine
+# 🛡️ Customer Support Fine
 
 ### Policy-Gated Autonomous Customer Support Engine
 
-*A 3B LLM that can never execute an unauthorised refund â€” by design.*
+*A 3B LLM that can never execute an unauthorised refund — by design.*
 
 [![Tests](https://img.shields.io/badge/Tests-98%20passed-22c55e?style=for-the-badge&logo=pytest&logoColor=white)](./tests)
 [![Benchmark](https://img.shields.io/badge/Benchmark-310%2F310-22c55e?style=for-the-badge&logo=checkmarx&logoColor=white)](./EVALUATION_RESULTS/benchmark-rules-baseline.md)
@@ -30,7 +30,7 @@ Traditional LLM customer-support agents fail in production in predictable ways:
 | Duplicate financial execution | The same refund processes twice |
 | Unverified optimism | Agent says "refund processed" before the DB confirms it |
 
-**Customer Support Fine** eliminates every one of these by separating *intelligence* from *authority*. The LLM is a **proposer only** â€” it can suggest actions but cannot execute them. All financial state transitions are gated by a **deterministic policy engine** that operates independently of the model.
+**Customer Support Fine** eliminates every one of these by separating *intelligence* from *authority*. The LLM is a **proposer only** — it can suggest actions but cannot execute them. All financial state transitions are gated by a **deterministic policy engine** that operates independently of the model.
 
 ---
 
@@ -40,32 +40,32 @@ Traditional LLM customer-support agents fail in production in predictable ways:
 
 ```mermaid
 graph TB
-    subgraph UNTRUSTED["ðŸ”´ Untrusted Zone"]
+    subgraph UNTRUSTED["🔴 Untrusted Zone"]
         USER["Customer Browser"]
         LLM["Qwen2.5-3B-Instruct\n(Proposer only)"]
     end
 
-    subgraph ORCHESTRATOR["ðŸŸ¡ Bounded Orchestrator"]
-        SENT["Sentiment &\nFrustration Scorer"]
-        PLAN["Re-plan Loop\nâ‰¤3 rounds Â· â‰¤6 tool calls\nâ‰¤1 mutation/turn"]
+    subgraph ORCHESTRATOR["🟡 Bounded Orchestrator"]
+        SENT["Sentiment and\nFrustration Scorer"]
+        PLAN["Re-plan Loop\n<=3 rounds, <=6 tool calls\n<=1 mutation/turn"]
         VERIFY["Post-Action\nState Verifier"]
     end
 
-    subgraph TRUSTED["ðŸŸ¢ Trusted Zone"]
+    subgraph TRUSTED["🟢 Trusted Zone"]
         POLICY["policy.py\nDeterministic Engine\n19 reason codes"]
         TOOLS["tools.py\nOwnership Check\nIdempotency Key\nAudit Write"]
         DB[("SQLite / Postgres\nAppend-only Audit Log")]
         RETRIEVAL["BM25Plus\nPolicy Retrieval"]
     end
 
-    USER -->|"session token â€” no user ID"| SENT
+    USER -->|"session token - no user ID"| SENT
     SENT --> PLAN
     PLAN -->|"proposed action"| TOOLS
     TOOLS -->|"re-verify before execute"| POLICY
     POLICY -->|"ALLOW / DENY / REQUIRE_APPROVAL"| TOOLS
     TOOLS --> DB
     TOOLS --> VERIFY
-    VERIFY -->|"state unconfirmed â†’ escalate"| PLAN
+    VERIFY -->|"state unconfirmed - escalate"| PLAN
     LLM <-->|"read-only tool results"| PLAN
     RETRIEVAL --> LLM
 
@@ -88,7 +88,7 @@ sequenceDiagram
 
     C->>S: message
     S->>O: frustration_score, urgency_flag
-    O->>L: UNDERSTAND â€” intent + entities
+    O->>L: UNDERSTAND - intent + entities
     L-->>O: intent, order_id, ambiguity?
 
     alt Ambiguous
@@ -100,7 +100,7 @@ sequenceDiagram
         T-->>O: structured data
     end
 
-    O->>L: ACT â€” propose one mutating action
+    O->>L: ACT - propose one mutating action
     L-->>O: proposed: submit_refund(order_id, reason)
 
     O->>P: check_policy(order, action)
@@ -117,7 +117,7 @@ sequenceDiagram
         O->>C: policy reason + help text
     else REQUIRE_APPROVAL
         O->>DB: queue for ops console
-        O->>C: "under review" response
+        O->>C: under review response
     end
 ```
 
@@ -125,13 +125,13 @@ sequenceDiagram
 
 ```mermaid
 graph LR
-    A["Customer Message\n'give me a refund'"] --> B{"Orchestrator\nIntent Allowlist"}
+    A["Customer Message\ngive me a refund"] --> B{"Orchestrator\nIntent Allowlist"}
     B -->|"not in allowlist"| X1["Rejected\nNo DB write"]
     B -->|"allowed"| C{"Policy Engine\nIndependent Check"}
     C -->|"outside 30-day window"| X2["OUT_OF_WINDOW\nAudit logged"]
     C -->|"FINAL_SALE item"| X3["FINAL_SALE\nAudit logged"]
     C -->|"already refunded"| X4["ALREADY_REFUNDED\nAudit logged"]
-    C -->|"amount > $100"| Y["REQUIRE_APPROVAL\nOps queue"]
+    C -->|"amount over 100"| Y["REQUIRE_APPROVAL\nOps queue"]
     C -->|"ALLOW"| D{"Idempotency\nKey Check"}
     D -->|"duplicate key"| X5["Replay winner\nNo double spend"]
     D -->|"unique"| E["Execute\nAudit row committed"]
@@ -154,7 +154,7 @@ Every score is reproducible via frozen harnesses in `eval/`.
 | **Policy Retrieval (BM25+)** | 14 queries | **Recall@4: 1.00** | MRR: 0.8929 | [`retrieval.json`](./EVALUATION_RESULTS/retrieval.json) |
 | **CLINC150 OOS Recall** | 1,000 | 96.70% | 3.3% false accept | [`external-nlu-rules.md`](./EVALUATION_RESULTS/external-nlu-rules.md) |
 | **Latency (CPU, rules baseline)** | 310 | p50: **16 ms** | p95: 24 ms | [`scorecard.md`](./EVALUATION_RESULTS/scorecard.md) |
-| **Unit & Integration Tests** | 98 | **100%** | â€” | [`tests/`](./tests) |
+| **Unit & Integration Tests** | 98 | **100%** | — | [`tests/`](./tests) |
 
 > **Honesty note:** Numbers above reflect the *rules baseline*, which shares `policy.py` with the evaluator. QLoRA training is scripted and notebook-ready but has not run (no local NVIDIA GPU). Fine-tuned model metrics are marked `NOT RUN` rather than estimated. See [`FINAL_REPORT.md`](./FINAL_REPORT.md).
 
@@ -162,20 +162,20 @@ Every score is reproducible via frozen harnesses in `eval/`.
 
 | Scenario Family | n | Pass | Invariant |
 |---|:---:|:---:|---|
-| `refund_eligible` | 35 | âœ… 100% | Executes within 30-day window at line-item price |
-| `refund_out_of_window` | 25 | âœ… 100% | Denied: `OUT_OF_WINDOW` |
-| `refund_final_sale` | 20 | âœ… 100% | Denied: `FINAL_SALE` |
-| `refund_over_threshold` | 25 | âœ… 100% | Queued: `REQUIRES_APPROVAL` |
-| `refund_already_refunded` | 15 | âœ… 100% | Denied: `ALREADY_REFUNDED` |
-| `return_eligible` | 30 | âœ… 100% | RMA created, label generated |
-| `replacement_damaged` | 25 | âœ… 100% | Zero-cost replacement order created |
-| `cancellation` | 20 | âœ… 100% | Allowed if `placed`; denied if `shipped` |
-| `warranty` | 20 | âœ… 100% | Allowed â‰¤ 365 days; denied if expired |
-| `order_status` | 30 | âœ… 100% | Accurate tracking + line-item grounding |
-| `missing_information` | 15 | âœ… 100% | Clarification requested; zero phantom actions |
-| `multi_item_ambiguity` | 10 | âœ… 100% | Ambiguity clarified before return/refund |
-| `security_cross_account` | 15 | âœ… **100%** | **0 leaks** â€” 404 for foreign orders |
-| `security_prompt_injection` | 15 | âœ… **100%** | **0 mutations** â€” overrides rejected |
+| `refund_eligible` | 35 | ✅ 100% | Executes within 30-day window at line-item price |
+| `refund_out_of_window` | 25 | ✅ 100% | Denied: `OUT_OF_WINDOW` |
+| `refund_final_sale` | 20 | ✅ 100% | Denied: `FINAL_SALE` |
+| `refund_over_threshold` | 25 | ✅ 100% | Queued: `REQUIRES_APPROVAL` |
+| `refund_already_refunded` | 15 | ✅ 100% | Denied: `ALREADY_REFUNDED` |
+| `return_eligible` | 30 | ✅ 100% | RMA created, label generated |
+| `replacement_damaged` | 25 | ✅ 100% | Zero-cost replacement order created |
+| `cancellation` | 20 | ✅ 100% | Allowed if `placed`; denied if `shipped` |
+| `warranty` | 20 | ✅ 100% | Allowed <= 365 days; denied if expired |
+| `order_status` | 30 | ✅ 100% | Accurate tracking + line-item grounding |
+| `missing_information` | 15 | ✅ 100% | Clarification requested; zero phantom actions |
+| `multi_item_ambiguity` | 10 | ✅ 100% | Ambiguity clarified before return/refund |
+| `security_cross_account` | 15 | ✅ **100%** | **0 leaks** — 404 for foreign orders |
+| `security_prompt_injection` | 15 | ✅ **100%** | **0 mutations** — overrides rejected |
 
 ---
 
@@ -186,7 +186,7 @@ Every score is reproducible via frozen harnesses in `eval/`.
 - Python 3.11 or 3.12
 - Git
 
-### 1 Â· Install
+### 1 · Install
 
 ```bash
 git clone https://github.com/Sahilgumber7/customer-support-fine.git
@@ -194,7 +194,7 @@ cd customer-support-fine
 pip install -e .
 ```
 
-### 2 Â· Seed & Run
+### 2 · Seed & Run
 
 ```bash
 # Build the synthetic retail database (12 products, 5 customers, edge-case orders)
@@ -220,7 +220,7 @@ uvicorn support_ai.api:app --reload --port 8000
 | CUST-004 | Dana | Final-sale & already-refunded items |
 | CUST-005 | Eli | Active shipped orders & cancellation edge cases |
 
-### 3 Â· Run the Evaluation Suite
+### 3 · Run the Evaluation Suite
 
 ```bash
 pytest                                # 98 unit & integration tests
@@ -247,14 +247,14 @@ python -m data_gen.generate --variants 4
 |---|:---:|---|
 | Train | 2,796 | 13 scenario families |
 | Dev | 312 | 3 held-out families: `human_handoff`, `multi_item_ambiguity`, `refund_already_refunded` |
-| Excluded | â€” | `cross_account`, `prompt_injection` â€” never in SFT |
+| Excluded | — | `cross_account`, `prompt_injection` — never in SFT |
 
 ### QLoRA Pipeline
 
 ```mermaid
 graph LR
-    A["Qwen2.5-3B-Instruct\nBase â€” Apache 2.0"] --> B["4-bit NF4 QLoRA\nr=16 Â· Î±=32\ndropout=0.05\nall linear projections"]
-    B --> C["2 epochs Â· lr=1e-4 cosine\nbatch 2 Ã— grad-accum 8\nmax_len=2048"]
+    A["Qwen2.5-3B-Instruct\nBase - Apache 2.0"] --> B["4-bit NF4 QLoRA\nr=16, alpha=32\ndropout=0.05\nall linear projections"]
+    B --> C["2 epochs, lr=1e-4 cosine\nbatch 2 x grad-accum 8\nmax_len=2048"]
     C --> D["LoRA Adapter"]
     D --> E["merge_and_export.py"]
     E --> F["GGUF Q4_K_M\nllama.cpp CPU serving"]
@@ -262,7 +262,7 @@ graph LR
 
 Run via [`notebooks/finetune_qwen3b.ipynb`](./notebooks/finetune_qwen3b.ipynb) on any free Kaggle or Colab T4 session.
 
-> **Status:** Scripts, config, and notebook are complete. A checkpoint does not yet exist (CPU-only build machine). See [`FINAL_REPORT.md Â§C`](./FINAL_REPORT.md).
+> **Status:** Scripts, config, and notebook are complete. A checkpoint does not yet exist (CPU-only build machine). See [`FINAL_REPORT.md`](./FINAL_REPORT.md).
 
 ---
 
@@ -270,49 +270,49 @@ Run via [`notebooks/finetune_qwen3b.ipynb`](./notebooks/finetune_qwen3b.ipynb) o
 
 ```
 customer-support-fine/
-â”œâ”€â”€ src/support_ai/
-â”‚   â”œâ”€â”€ policy.py           # Deterministic policy engine (ALLOW/DENY/REQUIRE_APPROVAL/ESCALATE)
-â”‚   â”œâ”€â”€ orchestrator.py     # Bounded state machine: â‰¤6 tools, â‰¤3 rounds, â‰¤1 mutation/turn
-â”‚   â”œâ”€â”€ tools.py            # Tool definitions: ownership checks, idempotency, audit writes
-â”‚   â”œâ”€â”€ sentiment.py        # Real-time frustration scorer & handoff dossier builder
-â”‚   â”œâ”€â”€ retrieval.py        # BM25Plus policy retrieval with query expansion
-â”‚   â”œâ”€â”€ db.py               # SQLAlchemy schema (SQLite / Postgres compatible)
-â”‚   â”œâ”€â”€ seed.py             # Deterministic synthetic retail company seeder
-â”‚   â”œâ”€â”€ api.py              # FastAPI: chat, ops, sentiment, CSAT endpoints
-â”‚   â”œâ”€â”€ web.py              # Chat & ops console HTML/JS frontend
-â”‚   â”œâ”€â”€ llm.py              # Rules baseline + llama.cpp backend interface
-â”‚   â””â”€â”€ config.py           # Pydantic environment config
-â”œâ”€â”€ eval/
-â”‚   â”œâ”€â”€ harness.py          # 310-case frozen benchmark harness
-â”‚   â”œâ”€â”€ multiturn.py        # 40-case multi-turn conversation evaluator
-â”‚   â”œâ”€â”€ adversarial.py      # 60-case held-out adversarial suite
-â”‚   â”œâ”€â”€ retrieval_eval.py   # Recall@K and MRR measurement
-â”‚   â”œâ”€â”€ rubric.py           # 100-case human-rubric export
-â”‚   â”œâ”€â”€ scorecard.py        # Weighted formal scorecard generator
-â”‚   â””â”€â”€ external/           # CLINC150 / BANKING77 / Bitext out-of-domain probes
-â”œâ”€â”€ data/
-â”‚   â”œâ”€â”€ policy/             # Versioned markdown retail policies
-â”‚   â”œâ”€â”€ rubric/             # Human rubric spec & item exports
-â”‚   â””â”€â”€ sft/                # Dataset manifest & metadata
-â”œâ”€â”€ data_gen/
-â”‚   â”œâ”€â”€ generate.py         # Policy-grounded SFT dataset generator
-â”‚   â”œâ”€â”€ validate.py         # Schema, integrity & split validator
-â”‚   â””â”€â”€ spotcheck.py        # Semantic audit of generated records
-â”œâ”€â”€ training/
-â”‚   â”œâ”€â”€ train_qlora.py      # QLoRA fine-tuning script
-â”‚   â”œâ”€â”€ merge_and_export.py # LoRA merge & GGUF Q4_K_M quantisation
-â”‚   â””â”€â”€ requirements-train.txt
-â”œâ”€â”€ notebooks/
-â”‚   â””â”€â”€ finetune_qwen3b.ipynb   # Kaggle / Colab T4 fine-tuning notebook
-â”œâ”€â”€ tests/                  # 98 unit, API, integration & UI tests
-â”œâ”€â”€ EVALUATION_RESULTS/     # Machine-readable JSON + Markdown benchmark reports
-â”œâ”€â”€ docs/                   # Architecture diagrams & UI screenshots
-â”œâ”€â”€ ARCHITECTURE.md         # Trust boundaries, data-flow, defence-in-depth
-â”œâ”€â”€ SECURITY.md             # Threat model, isolation policies, audit trails
-â”œâ”€â”€ EVALUATION.md           # Evaluation philosophy, methodology, results
-â”œâ”€â”€ FINAL_REPORT.md         # End-to-end status, scorecard trace, honest gaps
-â”œâ”€â”€ DATASET_CARD.md         # SFT data composition & family-split strategy
-â””â”€â”€ MODEL_CARD.md           # Base model specs, intended use, QLoRA config
++-- src/support_ai/
+|   +-- policy.py           # Deterministic policy engine (ALLOW/DENY/REQUIRE_APPROVAL/ESCALATE)
+|   +-- orchestrator.py     # Bounded state machine: <=6 tools, <=3 rounds, <=1 mutation/turn
+|   +-- tools.py            # Tool definitions: ownership checks, idempotency, audit writes
+|   +-- sentiment.py        # Real-time frustration scorer & handoff dossier builder
+|   +-- retrieval.py        # BM25Plus policy retrieval with query expansion
+|   +-- db.py               # SQLAlchemy schema (SQLite / Postgres compatible)
+|   +-- seed.py             # Deterministic synthetic retail company seeder
+|   +-- api.py              # FastAPI: chat, ops, sentiment, CSAT endpoints
+|   +-- web.py              # Chat & ops console HTML/JS frontend
+|   +-- llm.py              # Rules baseline + llama.cpp backend interface
+|   +-- config.py           # Pydantic environment config
++-- eval/
+|   +-- harness.py          # 310-case frozen benchmark harness
+|   +-- multiturn.py        # 40-case multi-turn conversation evaluator
+|   +-- adversarial.py      # 60-case held-out adversarial suite
+|   +-- retrieval_eval.py   # Recall@K and MRR measurement
+|   +-- rubric.py           # 100-case human-rubric export
+|   +-- scorecard.py        # Weighted formal scorecard generator
+|   +-- external/           # CLINC150 / BANKING77 / Bitext out-of-domain probes
++-- data/
+|   +-- policy/             # Versioned markdown retail policies
+|   +-- rubric/             # Human rubric spec & item exports
+|   +-- sft/                # Dataset manifest & metadata
++-- data_gen/
+|   +-- generate.py         # Policy-grounded SFT dataset generator
+|   +-- validate.py         # Schema, integrity & split validator
+|   +-- spotcheck.py        # Semantic audit of generated records
++-- training/
+|   +-- train_qlora.py      # QLoRA fine-tuning script
+|   +-- merge_and_export.py # LoRA merge & GGUF Q4_K_M quantisation
+|   +-- requirements-train.txt
++-- notebooks/
+|   +-- finetune_qwen3b.ipynb   # Kaggle / Colab T4 fine-tuning notebook
++-- tests/                  # 98 unit, API, integration & UI tests
++-- EVALUATION_RESULTS/     # Machine-readable JSON + Markdown benchmark reports
++-- docs/                   # Architecture diagrams & UI screenshots
++-- ARCHITECTURE.md         # Trust boundaries, data-flow, defence-in-depth
++-- SECURITY.md             # Threat model, isolation policies, audit trails
++-- EVALUATION.md           # Evaluation philosophy, methodology, results
++-- FINAL_REPORT.md         # End-to-end status, scorecard trace, honest gaps
++-- DATASET_CARD.md         # SFT data composition & family-split strategy
++-- MODEL_CARD.md           # Base model specs, intended use, QLoRA config
 ```
 
 ---
