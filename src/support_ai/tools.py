@@ -24,6 +24,7 @@ from .db import (
     Approval,
     AuditLog,
     Conversation,
+    Customer,
     Escalation,
     IdempotencyKey,
     Order,
@@ -34,12 +35,14 @@ from .db import (
     ReturnLabel,
     ReturnRequest,
     Shipment,
+    SopApproval,
     Ticket,
     TrackingEvent,
     Warranty,
 )
 from .retrieval import Retriever
 from .schemas import ToolCall, ToolResult
+from .sop import evaluate_authority
 
 
 class ToolError(Exception):
@@ -618,6 +621,26 @@ def submit_refund_request(
             status="pending",
         )
         ctx.session.add(approval)
+
+        # ── SOP row for the ops panel ──
+        sop_v = evaluate_authority(amount)
+        approval.sop_tier = sop_v.tier_number
+        approval.required_role = sop_v.required_label
+        cust = ctx.session.get(Customer, ctx.customer_id)
+        customer_name = cust.name if cust else "unknown"
+        sop_row = SopApproval(
+            approval_id=approval.id,
+            order_id=order.id,
+            customer_name=customer_name,
+            action_type="refund",
+            amount_cents=amount,
+            reason_code=reason_code,
+            sop_tier=sop_v.tier_number,
+            required_role=sop_v.required_label,
+            status="pending",
+        )
+        ctx.session.add(sop_row)
+
         escalation = Escalation(
             conversation_id=ctx.conversation_id,
             reason=verdict.reason.value,
@@ -635,6 +658,8 @@ def submit_refund_request(
             "escalation_id": escalation.id,
             "reason_code": verdict.reason.value,
             "explanation": verdict.explanation,
+            "sop_tier": sop_v.tier_number,
+            "sop_required_role": sop_v.required_label,
         }
         _remember(ctx, key, "submit_refund_request", result)
         _audit(

@@ -261,6 +261,30 @@ class Approval(Base):
     amount_cents: Mapped[int] = mapped_column(Integer)
     reason: Mapped[str] = mapped_column(String(240), default="")
     status: Mapped[str] = mapped_column(String(20), default="pending")
+    # SOP fields
+    sop_tier: Mapped[int] = mapped_column(Integer, default=1)
+    required_role: Mapped[str] = mapped_column(String(80), default="Support Agent")
+    approved_by_role: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    decision_note: Mapped[str] = mapped_column(String(400), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class SopApproval(Base):
+    """One row per SOP approval request — used by the /sop ops panel."""
+    __tablename__ = "sop_approvals"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    approval_id: Mapped[int] = mapped_column(ForeignKey("approvals.id"), index=True)
+    order_id: Mapped[str] = mapped_column(String(20), default="")
+    customer_name: Mapped[str] = mapped_column(String(120), default="")
+    action_type: Mapped[str] = mapped_column(String(20), default="refund")   # refund | replacement
+    amount_cents: Mapped[int] = mapped_column(Integer)
+    reason_code: Mapped[str] = mapped_column(String(80), default="")
+    sop_tier: Mapped[int] = mapped_column(Integer, default=1)
+    required_role: Mapped[str] = mapped_column(String(80), default="Support Agent")
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    approver_role: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    approver_note: Mapped[str] = mapped_column(String(400), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 

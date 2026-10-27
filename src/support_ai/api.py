@@ -22,6 +22,7 @@ from .db import (
     Message,
     Order,
     Refund,
+    SopApproval,
     get_session,
     init_db,
 )
@@ -30,6 +31,7 @@ from .orchestrator import Orchestrator, start_conversation
 from .retrieval import Retriever
 from .seed import reset_and_seed
 from .sentiment import CSATFeedback, analyze_sentiment
+from .sop import AuthorityLevel, sop_tiers_summary
 from .web import CHAT_HTML, OPS_HTML
 
 
@@ -76,6 +78,12 @@ class MessageIn(BaseModel):
 
 class ApprovalIn(BaseModel):
     decision: str = Field(pattern="^(approve|deny)$")
+    note: str = ""
+
+
+class SopApprovalIn(BaseModel):
+    decision: str = Field(pattern="^(approve|deny)$")
+    approver_role: str = Field(min_length=2, max_length=80)
     note: str = ""
 
 
@@ -239,6 +247,115 @@ def decide_approval(approval_id: int, payload: ApprovalIn, _: None = Depends(_re
             "status": approval.status,
             "refund_status": refund.status,
         }
+
+
+# --- SOP approvals ----------------------------------------------------------
+
+
+@app.get("/api/ops/sop")
+def sop_approvals(_: None = Depends(_require_ops)) -> dict:
+    """Return SOP tier matrix + all pending SOP approval requests."""
+    with next(get_session()) as s:
+        rows = s.scalars(select(SopApproval).order_by(SopApproval.id.desc()).limit(100))
+        items = [
+            {
+                "id": r.id,
+                "approval_id": r.approval_id,
+                "order_id": r.order_id,
+                "customer_name": r.customer_name,
+                "action_type": r.action_type,
+                "amount_cents": r.amount_cents,
+                "reason_code": r.reason_code,
+                "sop_tier": r.sop_tier,
+                "required_role": r.required_role,
+                "status": r.status,
+                "approver_role": r.approver_role,
+                "approver_note": r.approver_note,
+                "created_at": r.created_at.isoformat(),
+                "decided_at": r.decided_at.isoformat() if r.decided_at else None,
+            }
+            for r in rows
+        ]
+    return {"tiers": sop_tiers_summary(), "approvals": items}
+
+
+@app.post("/api/ops/sop/{sop_id}")
+def decide_sop_approval(
+    sop_id: int, payload: SopApprovalIn, _: None = Depends(_require_ops)
+) -> dict:
+    """An authorised role approves or denies a SOP-routed refund/replacement."""
+    from .sop import AuthorityLevel, can_approve
+
+    # Map submitted role label to authority level
+    role_map = {
+        "Support Agent": AuthorityLevel.SUPPORT_AGENT,
+        "Senior Support Agent": AuthorityLevel.SENIOR_AGENT,
+        "Team Supervisor": AuthorityLevel.SUPERVISOR,
+        "Operations Manager": AuthorityLevel.OPS_MANAGER,
+        "Director / Finance": AuthorityLevel.DIRECTOR,
+    }
+    actor_level = role_map.get(payload.approver_role)
+    if actor_level is None:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail=f"Unknown role: {payload.approver_role}")
+
+    with next(get_session()) as s:
+        sop_row = s.get(SopApproval, sop_id)
+        if sop_row is None or sop_row.status != "pending":
+            from fastapi import HTTPException
+            raise HTTPException(status_code=409, detail="SOP request not found or already decided.")
+
+        if not can_approve(actor_level, sop_row.amount_cents) and payload.decision == "approve":
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=403,
+                detail=f"{payload.approver_role} cannot approve ${sop_row.amount_cents/100:.2f}. "
+                       f"Requires {sop_row.required_role} or above.",
+            )
+
+        approval = s.get(Approval, sop_row.approval_id)
+        refund = s.get(Refund, approval.refund_id) if approval and approval.refund_id else None
+
+        new_status = "approved" if payload.decision == "approve" else "denied"
+        sop_row.status = new_status
+        sop_row.approver_role = payload.approver_role
+        sop_row.approver_note = payload.note
+        sop_row.decided_at = datetime.now(UTC)
+
+        if approval:
+            approval.status = new_status
+            approval.approved_by_role = payload.approver_role
+            approval.decision_note = payload.note
+            approval.decided_at = datetime.now(UTC)
+
+        if refund and payload.decision == "approve":
+            refund.status = "processed"
+            order = s.get(Order, refund.order_id)
+            if order:
+                already = sum(
+                    r.amount_cents
+                    for r in s.scalars(select(Refund).where(Refund.order_id == order.id))
+                    if r.status in {"processed", "approved"}
+                )
+                if already >= order.total_cents:
+                    order.status = "refunded"
+                    order.payment_status = "refunded"
+        elif refund and payload.decision == "deny":
+            refund.status = "denied"
+
+        s.add(
+            AuditLog(
+                correlation_id=f"sop-{sop_id}",
+                actor=f"ops:{payload.approver_role}",
+                action="sop_approval_decision",
+                target=f"sop:{sop_id}/approval:{sop_row.approval_id}",
+                decision=new_status.upper(),
+                reason_code=payload.note or "sop_review",
+                detail=f"tier={sop_row.sop_tier} role={payload.approver_role} amount={sop_row.amount_cents}",
+            )
+        )
+        s.commit()
+        return {"sop_id": sop_id, "status": new_status, "approver_role": payload.approver_role}
 
 
 @app.get("/api/ops/escalations")

@@ -3,6 +3,10 @@
 The model proposes; this module decides. Every function is pure: it takes explicit
 facts and returns a Verdict. No LLM output can widen a decision here, and no function
 mutates state. Tools call these *before* executing anything, then re-check.
+
+SOP integration: evaluate_refund_with_sop() returns both a Verdict *and* the
+SopVerdict so the orchestrator can route approvals to the correct authority tier
+without any LLM involvement in that decision.
 """
 
 from __future__ import annotations
@@ -12,6 +16,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 
 from .config import settings
+from .sop import SopVerdict, evaluate_authority
 
 
 class Decision(str, Enum):
@@ -208,21 +213,50 @@ def evaluate_refund(
             Reason.SUSPECTED_ABUSE,
             "Multiple refunds recently; requires human review.",
         )
-    if amount_cents > 50_000:
-        return Verdict(
-            Decision.ESCALATE,
-            Reason.HIGH_RISK,
-            "High-value refund requires specialist review.",
-        )
-    if amount_cents > settings.refund_approval_threshold_cents:
-        return Verdict(
-            Decision.REQUIRE_APPROVAL,
-            Reason.OVER_THRESHOLD,
-            f"Refund exceeds the ${settings.refund_approval_threshold_cents / 100:.0f} "
-            "auto-approval limit and needs a human decision.",
-            requires_approval=True,
-        )
-    return _allow(Reason.OK, f"Refund of {amount_cents} is within policy.")
+    # Use SOP tier to decide auto-approve vs. which authority must sign off.
+    sop = evaluate_authority(amount_cents)
+    if sop.auto_approve:
+        return _allow(Reason.OK, f"Refund of ${amount_cents/100:.2f} is within auto-approval limit.")
+    return Verdict(
+        Decision.REQUIRE_APPROVAL,
+        Reason.OVER_THRESHOLD,
+        f"Refund of ${amount_cents/100:.2f} requires approval by a {sop.required_label} (SOP Tier {sop.tier_number}).",
+        requires_approval=True,
+    )
+
+
+@dataclass(frozen=True)
+class RefundWithSop:
+    verdict: Verdict
+    sop: SopVerdict
+
+
+def evaluate_refund_with_sop(
+    *,
+    order_total_cents: int,
+    already_refunded_cents: int,
+    amount_cents: int,
+    delivered_at: datetime | None,
+    reason_code: str,
+    product_final_sale: bool,
+    product_returnable: bool,
+    refunds_last_30d: int = 0,
+    now: datetime | None = None,
+) -> RefundWithSop:
+    """Same as evaluate_refund but also returns the SOP tier verdict."""
+    verdict = evaluate_refund(
+        order_total_cents=order_total_cents,
+        already_refunded_cents=already_refunded_cents,
+        amount_cents=amount_cents,
+        delivered_at=delivered_at,
+        reason_code=reason_code,
+        product_final_sale=product_final_sale,
+        product_returnable=product_returnable,
+        refunds_last_30d=refunds_last_30d,
+        now=now,
+    )
+    sop = evaluate_authority(max(amount_cents, 1))
+    return RefundWithSop(verdict=verdict, sop=sop)
 
 
 # --- warranty ---------------------------------------------------------------
