@@ -358,3 +358,28 @@ def test_concurrent_identical_refunds_create_exactly_one_row(tmp_path):
     assert any(r.ok for r in results)
     # A losing racer may fail closed; it must never report a second refund.
     assert all(r.ok or r.error == "TOOL_FAILURE" for r in results)
+
+
+def test_replacement_under_threshold_auto_approves(ctx):
+    # ORD-1001 has SKU-CAB-01 ($14.90, <= $150 threshold)
+    res = call(ctx, "create_replacement_request", order_id="ORD-1001", sku="SKU-CAB-01", reason_code="damaged")
+    assert res.ok
+    assert res.data["status"] == "created"
+    assert res.data["eta_days"] == 3
+
+
+def test_replacement_over_threshold_creates_sop_approval(ctx):
+    # ORD-1005 has SKU-WCH-01 ($199.00, Tier 2 Senior Agent)
+    res = call(ctx, "create_replacement_request", order_id="ORD-1005", sku="SKU-WCH-01", reason_code="defective")
+    assert res.ok
+    assert res.data["status"] == "pending_approval"
+    assert res.data["sop_tier"] == 2
+    assert "Senior Support Agent" in res.data["sop_required_role"]
+
+    from support_ai.db import SopApproval
+    sop_row = ctx.session.scalar(select(SopApproval).where(SopApproval.order_id == "ORD-1005", SopApproval.action_type == "replacement"))
+    assert sop_row is not None
+    assert sop_row.amount_cents == 19900
+    assert sop_row.sop_tier == 2
+    assert sop_row.status == "pending"
+

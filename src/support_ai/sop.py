@@ -40,13 +40,21 @@ AUTHORITY_LABELS: dict[AuthorityLevel, str] = {
     AuthorityLevel.DIRECTOR: "Director / Finance",
 }
 
+TIER_SLA_HOURS: dict[int, int] = {
+    1: 0,    # Auto-approved (Instant)
+    2: 2,    # Senior Agent: 2 hours
+    3: 4,    # Supervisor: 4 hours
+    4: 24,   # Ops Manager: 24 hours
+    5: 48,   # Director: 48 hours
+}
+
 # SOP tiers: (max_amount_cents_inclusive, required_authority_level)
-# Ordered ascending.  Anything above the last threshold routes to DIRECTOR.
+# Ordered ascending. Anything above the last threshold routes to DIRECTOR.
 _TIERS: list[tuple[int, AuthorityLevel]] = [
-    (2_500,   AuthorityLevel.SUPPORT_AGENT),    # $0 – $25     auto-approve
-    (10_000,  AuthorityLevel.SENIOR_AGENT),     # $25 – $100   Senior Agent
-    (25_000,  AuthorityLevel.SUPERVISOR),       # $100 – $250  Supervisor
-    (75_000,  AuthorityLevel.OPS_MANAGER),      # $250 – $750  Ops Manager
+    (15_000,  AuthorityLevel.SUPPORT_AGENT),    # $0 – $150.00  auto-approve
+    (25_000,  AuthorityLevel.SENIOR_AGENT),     # $150 – $250   Senior Agent
+    (50_000,  AuthorityLevel.SUPERVISOR),       # $250 – $500   Supervisor
+    (75_000,  AuthorityLevel.OPS_MANAGER),      # $500 – $750   Ops Manager
 ]
 _DIRECTOR_THRESHOLD = 75_000                    # anything above → Director
 
@@ -59,6 +67,7 @@ class SopVerdict:
     auto_approve: bool          # True only for Support Agent tier
     tier_number: int            # 1-5
     max_cents_for_tier: int     # upper bound (inclusive) for this tier, 0 = unlimited
+    sla_hours: int = 0
 
 
 def evaluate_authority(amount_cents: int) -> SopVerdict:
@@ -75,6 +84,7 @@ def evaluate_authority(amount_cents: int) -> SopVerdict:
                 auto_approve=(level == AuthorityLevel.SUPPORT_AGENT),
                 tier_number=tier_num,
                 max_cents_for_tier=limit,
+                sla_hours=TIER_SLA_HOURS.get(tier_num, 0),
             )
 
     # Above all tiers → Director
@@ -85,7 +95,14 @@ def evaluate_authority(amount_cents: int) -> SopVerdict:
         auto_approve=False,
         tier_number=5,
         max_cents_for_tier=0,  # 0 = no upper bound
+        sla_hours=TIER_SLA_HOURS.get(5, 48),
     )
+
+
+def evaluate_replacement_authority(item_price_cents: int, quantity: int = 1) -> SopVerdict:
+    """Evaluate the authority tier required to approve a replacement based on total value."""
+    total = max(1, item_price_cents * max(1, quantity))
+    return evaluate_authority(total)
 
 
 def can_approve(actor_level: AuthorityLevel, amount_cents: int) -> bool:
@@ -108,6 +125,8 @@ def sop_tiers_summary() -> list[dict]:
             "from_display": f"${prev/100:.2f}",
             "to_display": f"${limit/100:.2f}",
             "auto_approve": (level == AuthorityLevel.SUPPORT_AGENT),
+            "sla_hours": TIER_SLA_HOURS.get(tier_num, 0),
+            "sla_display": f"{TIER_SLA_HOURS.get(tier_num, 0)}h" if TIER_SLA_HOURS.get(tier_num, 0) else "Instant",
         })
         prev = limit
     rows.append({
@@ -119,5 +138,7 @@ def sop_tiers_summary() -> list[dict]:
         "from_display": f"${prev/100:.2f}",
         "to_display": "unlimited",
         "auto_approve": False,
+        "sla_hours": TIER_SLA_HOURS.get(5, 48),
+        "sla_display": "48h",
     })
     return rows

@@ -15,7 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -42,7 +42,7 @@ from .db import (
 )
 from .retrieval import Retriever
 from .schemas import ToolCall, ToolResult
-from .sop import evaluate_authority
+from .sop import evaluate_authority, evaluate_replacement_authority
 
 
 class ToolError(Exception):
@@ -445,13 +445,36 @@ def create_replacement_request(
     if item is None or product is None:
         raise ToolError("SKU_NOT_IN_ORDER", "That item isn't part of this order.")
 
-    verdict = policy.evaluate_replacement(
+    qty = max(1, min(quantity, item.qty))
+    item_value_cents = item.unit_price_cents * qty
+
+    # Abuse velocity check: count recent replacement requests in last 30d
+    recent_replacements = (
+        ctx.session.scalar(
+            select(func.count())
+            .select_from(ReplacementRequest)
+            .join(Order, Order.id == ReplacementRequest.order_id)
+            .where(
+                Order.customer_id == ctx.customer_id,
+                ReplacementRequest.created_at >= ctx.clock() - timedelta(days=30),
+            )
+        )
+        or 0
+    )
+
+    sop_wrap = policy.evaluate_replacement_with_sop(
         delivered_at=order.delivered_at,
         reason_code=reason_code,
         product_final_sale=product.final_sale,
+        item_value_cents=item_value_cents,
+        quantity=qty,
+        replacements_last_30d=recent_replacements,
         now=ctx.clock(),
     )
-    if not verdict.allowed:
+    verdict = sop_wrap.verdict
+    sop_v = sop_wrap.sop
+
+    if not verdict.allowed and not verdict.requires_approval and verdict.decision != policy.Decision.ESCALATE:
         _audit(ctx, "create_replacement_request", f"{order.id}/{sku}", "DENY", verdict.reason.value)
         ctx.session.commit()  # persist the denial audit trail
         raise ToolError(verdict.reason.value, verdict.explanation)
@@ -465,10 +488,76 @@ def create_replacement_request(
     if (cached := _dedupe(ctx, key)) is not None:
         return cached
 
+    if verdict.decision in {policy.Decision.REQUIRE_APPROVAL, policy.Decision.ESCALATE}:
+        req = ReplacementRequest(
+            order_id=order.id,
+            sku=sku,
+            qty=qty,
+            reason=reason_code,
+            status="pending_approval",
+            idempotency_key=key,
+        )
+        ctx.session.add(req)
+        if (cached := _flush_or_replay(ctx, key)) is not None:
+            return cached
+
+        approval = Approval(
+            conversation_id=ctx.conversation_id,
+            replacement_id=req.id,
+            amount_cents=item_value_cents,
+            reason=f"{verdict.reason.value}: {verdict.explanation}",
+            status="pending",
+            sop_tier=sop_v.tier_number,
+            required_role=sop_v.required_label,
+        )
+        ctx.session.add(approval)
+        ctx.session.flush()
+
+        cust = ctx.session.get(Customer, ctx.customer_id)
+        customer_name = cust.name if cust else "unknown"
+        sop_row = SopApproval(
+            approval_id=approval.id,
+            order_id=order.id,
+            customer_name=customer_name,
+            action_type="replacement",
+            amount_cents=item_value_cents,
+            reason_code=reason_code,
+            sop_tier=sop_v.tier_number,
+            required_role=sop_v.required_label,
+            status="pending",
+        )
+        ctx.session.add(sop_row)
+
+        escalation = Escalation(
+            conversation_id=ctx.conversation_id,
+            reason=verdict.reason.value,
+            summary=f"Replacement on {order.id} ({sku}) needs review: {verdict.explanation}",
+            status="open",
+        )
+        ctx.session.add(escalation)
+        result = {
+            "replacement_request_id": req.id,
+            "order_id": order.id,
+            "sku": sku,
+            "amount_cents": item_value_cents,
+            "status": "pending_approval",
+            "approval_id": approval.id,
+            "escalation_id": escalation.id,
+            "reason_code": verdict.reason.value,
+            "explanation": verdict.explanation,
+            "sop_tier": sop_v.tier_number,
+            "sop_required_role": sop_v.required_label,
+        }
+        _remember(ctx, key, "create_replacement_request", result)
+        _audit(ctx, "create_replacement_request", f"{order.id}/{sku}", "REQUIRE_APPROVAL", verdict.reason.value, result)
+        if (cached := _commit_or_replay(ctx, key)) is not None:
+            return cached
+        return result
+
     req = ReplacementRequest(
         order_id=order.id,
         sku=sku,
-        qty=max(1, min(quantity, item.qty)),
+        qty=qty,
         reason=reason_code,
         status="created",
         idempotency_key=key,
@@ -626,6 +715,7 @@ def submit_refund_request(
         sop_v = evaluate_authority(amount)
         approval.sop_tier = sop_v.tier_number
         approval.required_role = sop_v.required_label
+        ctx.session.flush()
         cust = ctx.session.get(Customer, ctx.customer_id)
         customer_name = cust.name if cust else "unknown"
         sop_row = SopApproval(

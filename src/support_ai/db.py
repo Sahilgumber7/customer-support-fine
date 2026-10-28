@@ -258,6 +258,7 @@ class Approval(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id"), index=True)
     refund_id: Mapped[int | None] = mapped_column(ForeignKey("refunds.id"), nullable=True)
+    replacement_id: Mapped[int | None] = mapped_column(ForeignKey("replacement_requests.id"), nullable=True)
     amount_cents: Mapped[int] = mapped_column(Integer)
     reason: Mapped[str] = mapped_column(String(240), default="")
     status: Mapped[str] = mapped_column(String(20), default="pending")

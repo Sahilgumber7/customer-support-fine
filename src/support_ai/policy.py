@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 
 from .config import settings
-from .sop import SopVerdict, evaluate_authority
+from .sop import SopVerdict, evaluate_authority, evaluate_replacement_authority
 
 
 class Decision(str, Enum):
@@ -136,9 +136,12 @@ def evaluate_replacement(
     delivered_at: datetime | None,
     reason_code: str,
     product_final_sale: bool,
+    item_value_cents: int = 0,
+    replacements_last_30d: int = 0,
     now: datetime | None = None,
 ) -> Verdict:
-    """Replacements are for defects; final-sale still qualifies when defective."""
+    """Replacements are for defects; final-sale still qualifies when defective.
+    High value replacements and repeated requests route through SOP approval."""
     if delivered_at is None:
         return _deny(Reason.NOT_YET_DELIVERED, "The order has not been delivered yet.")
     if reason_code not in DEFECT_REASONS:
@@ -154,7 +157,55 @@ def evaluate_replacement(
             Reason.OUT_OF_WINDOW,
             f"Replacement window is {window} days; this order was delivered {days} days ago.",
         )
+    if replacements_last_30d >= 3:
+        return Verdict(
+            Decision.ESCALATE,
+            Reason.SUSPECTED_ABUSE,
+            "Multiple replacement requests recently; requires human review.",
+        )
+    if item_value_cents > 50_000:
+        return Verdict(
+            Decision.ESCALATE,
+            Reason.HIGH_RISK,
+            f"Replacement item value (${item_value_cents/100:.2f}) exceeds high-risk threshold; requires executive escalation.",
+        )
+    if item_value_cents > settings.refund_approval_threshold_cents:
+        sop = evaluate_replacement_authority(item_value_cents)
+        return Verdict(
+            Decision.REQUIRE_APPROVAL,
+            Reason.OVER_THRESHOLD,
+            f"Replacement value of ${item_value_cents/100:.2f} requires approval by a {sop.required_label} (SOP Tier {sop.tier_number}).",
+            requires_approval=True,
+        )
     return _allow(Reason.OK, "Defect reported within the replacement window.")
+
+
+@dataclass(frozen=True)
+class ReplacementWithSop:
+    verdict: Verdict
+    sop: SopVerdict
+
+
+def evaluate_replacement_with_sop(
+    *,
+    delivered_at: datetime | None,
+    reason_code: str,
+    product_final_sale: bool,
+    item_value_cents: int = 0,
+    quantity: int = 1,
+    replacements_last_30d: int = 0,
+    now: datetime | None = None,
+) -> ReplacementWithSop:
+    verdict = evaluate_replacement(
+        delivered_at=delivered_at,
+        reason_code=reason_code,
+        product_final_sale=product_final_sale,
+        item_value_cents=item_value_cents,
+        replacements_last_30d=replacements_last_30d,
+        now=now,
+    )
+    sop = evaluate_replacement_authority(max(item_value_cents, 1), quantity)
+    return ReplacementWithSop(verdict=verdict, sop=sop)
 
 
 # --- cancellation -----------------------------------------------------------
@@ -212,6 +263,12 @@ def evaluate_refund(
             Decision.ESCALATE,
             Reason.SUSPECTED_ABUSE,
             "Multiple refunds recently; requires human review.",
+        )
+    if amount_cents > 50_000:
+        return Verdict(
+            Decision.ESCALATE,
+            Reason.HIGH_RISK,
+            f"Refund of ${amount_cents/100:.2f} exceeds high-risk threshold; requires executive escalation.",
         )
     # Use SOP tier to decide auto-approve vs. which authority must sign off.
     sop = evaluate_authority(amount_cents)
